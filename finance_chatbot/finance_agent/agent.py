@@ -157,12 +157,24 @@ def _map_aliases_to_signature(args: Dict[str, Any], func: Callable) -> Dict[str,
         "company_name": "company_name",
         "company": "company_name",
         "name": "company_name",
+        # country aliases
+        "country": "country",
+        "country_code": "country_code",
+        "country_name": "country",
+        # indicator/metric aliases
+        "indicator": "indicator",
+        "metric": "indicator",
         # generic
         "query": "query",
         "q": "query",
         "start_date": "start_date",
         "end_date": "end_date",
         "date": "date",
+        "period": "period",
+        "exchange": "exchange",
+        "from_currency": "from_currency",
+        "to_currency": "to_currency",
+        "amount": "amount",
     }
     mapped: Dict[str, Any] = {}
     # first, copy direct matches
@@ -252,21 +264,98 @@ class FinancialAgent:
 
         q = resolved_subquestion.lower()
 
-        # Heuristic bổ sung
-        if "mã cổ phiếu" in q or "ticker" in q or "symbol" in q:
+        # ========== Enhanced Heuristic Rules ==========
+        
+        # Stock symbol lookup
+        if "mã cổ phiếu" in q or "ticker" in q or "symbol" in q or "mã chứng khoán" in q:
             sym = self.registry.get("get_stock_symbol")
             if sym and sym.func not in tools:
                 tools.insert(0, sym.func)
 
+        # Sector/Industry classification
+        if "ngành" in q or "sector" in q or "industry" in q or "lĩnh vực" in q or "thuộc ngành" in q:
+            sector = self.registry.get("get_sector_mapping")
+            if sector and sector.func not in tools:
+                tools.insert(0, sector.func)
+
+        # Macro economic data
+        if any(word in q for word in ["lạm phát", "inflation", "cpi", "gdp", "thất nghiệp", "unemployment", 
+                                       "lãi suất", "interest rate", "vĩ mô", "macro", "kinh tế vĩ mô"]):
+            macro = self.registry.get("get_macro_data")
+            if macro and macro.func not in tools:
+                tools.insert(0, macro.func)
+
+        # Exchange information
+        if "sàn" in q or "exchange" in q or ("hose" in q or "hnx" in q or "upcom" in q):
+            exchange = self.registry.get("get_exchange_info")
+            if exchange and exchange.func not in tools:
+                tools.insert(0, exchange.func)
+
+        # Currency exchange rate
+        if any(word in q for word in ["tỷ giá", "exchange rate", "usd", "vnd", "currency", "đô la", "đồng"]):
+            currency = self.registry.get("get_currency_rate")
+            if currency and currency.func not in tools:
+                tools.insert(0, currency.func)
+
+        # Income statement / Revenue
+        if any(word in q for word in ["doanh thu", "revenue", "lợi nhuận", "profit", "earnings", "income statement", 
+                                       "kết quả kinh doanh", "ebitda", "net income"]):
+            income = self.registry.get("get_income_statement")
+            if income and income.func not in tools:
+                tools.insert(0, income.func)
+
+        # Balance sheet / Equity / Assets
+        if any(word in q for word in ["vốn chủ", "equity", "tài sản", "assets", "nợ", "debt", "liabilities", 
+                                       "bảng cân đối", "balance sheet", "shareholders equity", "total assets"]):
+            balance = self.registry.get("get_balance_sheet")
+            if balance and balance.func not in tools:
+                tools.insert(0, balance.func)
+
+        # Cash flow analysis
+        if any(word in q for word in ["dòng tiền", "cash flow", "operating cash", "free cash flow", "fcf", 
+                                       "investing cash", "financing cash"]):
+            cashflow = self.registry.get("analyze_cashflow")
+            if cashflow and cashflow.func not in tools:
+                tools.insert(0, cashflow.func)
+
+        # Financial ratios
+        if any(word in q for word in ["roe", "roa", "pe", "p/e", "pb", "p/b", "eps", "tỷ số", "chỉ số tài chính",
+                                       "tỷ lệ", "margin", "biên lợi nhuận"]):
+            ratios = self.registry.get("calculate_ratios")
+            if ratios and ratios.func not in tools:
+                tools.insert(0, ratios.func)
+
+        # Valuation / Fair value
+        if any(word in q for word in ["định giá", "valuation", "fair value", "giá trị hợp lý", "dcf", "ddm", "peg"]):
+            valuation = self.registry.get("estimate_fair_value")
+            if valuation and valuation.func not in tools:
+                tools.insert(0, valuation.func)
+
+        # Technical indicators
+        if any(word in q for word in ["rsi", "macd", "ma", "moving average", "bollinger", "technical", 
+                                       "chỉ báo kỹ thuật", "đường trung bình"]):
+            technical = self.registry.get("get_technical_indicators")
+            if technical and technical.func not in tools:
+                tools.insert(0, technical.func)
+
+        # Price / Stock price
+        if any(word in q for word in ["giá", "price", "stock price", "giá cổ phiếu", "thị giá"]):
+            price = self.registry.get("get_stock_price")
+            if price and price.func not in tools:
+                tools.insert(0, price.func)
+
+        # Fundamental analysis
         if "thông tin cơ bản" in q or "fundamental" in q or "profile" in q:
             fund = self.registry.get("get_fundamentals")
             if fund and fund.func not in tools:
                 tools.insert(0, fund.func)
 
-        if "giá" in q or "price" in q:
-            gp = self.registry.get("get_stock_price")
-            if gp and gp.func not in tools:
-                tools.insert(0, gp.func)
+        # Risk metrics
+        if any(word in q for word in ["risk", "volatility", "beta", "sharpe", "sortino", "drawdown", "var", 
+                                       "rủi ro", "biến động"]):
+            risk = self.registry.get("get_risk_metrics")
+            if risk and risk.func not in tools:
+                tools.insert(0, risk.func)
 
         return tools
 

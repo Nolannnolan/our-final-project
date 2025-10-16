@@ -108,6 +108,26 @@ from .tools.valuation import estimate_fair_value
 from .tools.market_overview import get_market_overview
 from .tools.cashflow_analysis import analyze_cashflow
 
+# New tools - Phase 4: Data Foundation (Group 1)
+from .tools.exchange_info import get_exchange_info
+from .tools.currency_rate import get_currency_rate
+from .tools.macro_data import get_macro_data
+from .tools.sector_mapping import get_sector_mapping
+
+# New tools - Phase 5: Fundamental Analysis (Group 2)
+from .tools.income_statement import get_income_statement
+from .tools.balance_sheet import get_balance_sheet
+from .tools.compare_fundamentals import compare_fundamentals
+
+# New tools - Phase 6: Quantitative/Risk (Group 3)
+from .tools.backtest import get_backtest
+from .tools.correlation_matrix import get_correlation_matrix
+
+# New tools - Phase 7: Technical Analysis (Group 4)
+from .tools.pattern_recognition import get_pattern_recognition
+from .tools.candlestick_analysis import get_candlestick_analysis
+from .tools.signal_summary import get_signal_summary
+
 # ========== Register Existing Tools ==========
 
 registry.register(
@@ -203,4 +223,84 @@ registry.register(
     name="analyze_cashflow",
     description="Analyze company's cash flow including Operating Cash Flow (OCF), Free Cash Flow (FCF), Cash Conversion Cycle, and cash flow quality assessment. Use this to evaluate financial health and cash generation capability.",
     func=analyze_cashflow,
+)
+
+# ========== Register New Tools - Phase 4: Data Foundation ==========
+
+registry.register(
+    name="get_exchange_info",
+    description="Get information about stock exchanges including full name, country, timezone, trading hours, and currency. Supports HOSE, HNX, UPCOM (Vietnam), NYSE, NASDAQ (US), LSE, JPX, SSE, HKEX and others. Can auto-detect exchange from ticker symbol.",
+    func=get_exchange_info,
+)
+
+registry.register(
+    name="get_currency_rate",
+    description="Get real-time currency exchange rates between different currencies (USD, EUR, GBP, JPY, CNY, VND, SGD, THB, KRW). Can convert amounts between currencies. Use this for forex rates and currency conversion.",
+    func=get_currency_rate,
+)
+
+registry.register(
+    name="get_macro_data",
+    description="Get macroeconomic data for countries including GDP growth, inflation (CPI), unemployment rate, and interest rates. Supports US, Vietnam, China, Japan, EU. Also provides US Treasury yields. Use this for macro analysis and economic indicators.",
+    func=get_macro_data,
+)
+
+registry.register(
+    name="get_sector_mapping",
+    description="Get sector and industry classification for a company. Returns GICS sector, industry group, and list of peer companies in the same sector. Use this to understand company's business category and find competitors.",
+    func=get_sector_mapping,
+)
+
+# ========== Register New Tools - Phase 5: Fundamental Analysis ==========
+
+registry.register(
+    name="get_income_statement",
+    description="Get detailed Income Statement (Profit & Loss) for a company including revenue, costs, gross profit, operating profit, net income, and profit margins. Supports both annual and quarterly statements. Use this to analyze company's profitability and revenue trends.",
+    func=get_income_statement,
+)
+
+registry.register(
+    name="get_balance_sheet",
+    description="Get Balance Sheet for a company showing assets (current & total), liabilities (current & total), stockholders' equity, and key ratios like Current Ratio and Debt-to-Equity. Supports annual and quarterly data. Use this to assess financial position and leverage.",
+    func=get_balance_sheet,
+)
+
+registry.register(
+    name="compare_fundamentals",
+    description="Compare fundamental metrics across multiple companies side-by-side. Analyzes valuation (P/E, P/B), profitability (ROE, margins), growth (revenue/earnings growth), and identifies best/worst performers for each metric. Use this for competitive analysis and stock comparison.",
+    func=compare_fundamentals,
+)
+
+# ========== Register New Tools - Phase 6: Quantitative & Risk ==========
+
+registry.register(
+    name="get_backtest",
+    description="Backtest investment strategies with historical data. Supports multiple strategies: Buy & Hold, Moving Average Crossover, RSI-based trading, and Monthly Rebalancing. Returns total return, profit/loss, and trade history. Use this to test strategy performance before investing.",
+    func=get_backtest,
+)
+
+registry.register(
+    name="get_correlation_matrix",
+    description="Calculate correlation matrix between multiple stocks to understand relationships and diversification. Supports Pearson, Spearman, and Kendall methods. Can also compute rolling correlation over time. Use this for portfolio construction and risk assessment.",
+    func=get_correlation_matrix,
+)
+
+# ========== Register New Tools - Phase 7: Technical Analysis ==========
+
+registry.register(
+    name="get_pattern_recognition",
+    description="Detect chart patterns in stock price including Head & Shoulders, Double Top/Bottom, Triangle patterns (Ascending/Descending/Symmetrical), and Support/Resistance levels. Provides price targets and breakout signals. Use this for technical pattern analysis.",
+    func=get_pattern_recognition,
+)
+
+registry.register(
+    name="get_candlestick_analysis",
+    description="Analyze Japanese candlestick patterns including Doji, Hammer, Shooting Star, Engulfing (bullish/bearish), Morning/Evening Star, Three White Soldiers, and more. Detects reversal and continuation signals. Use this for candlestick pattern trading signals.",
+    func=get_candlestick_analysis,
+)
+
+registry.register(
+    name="get_signal_summary",
+    description="Aggregate technical signals from multiple indicators (Moving Averages, RSI, MACD, Bollinger Bands, Stochastic, Volume) into overall BUY/SELL/NEUTRAL recommendation with confidence level. Provides detailed breakdown of each indicator. Use this for comprehensive technical analysis summary.",
+    func=get_signal_summary,
 )

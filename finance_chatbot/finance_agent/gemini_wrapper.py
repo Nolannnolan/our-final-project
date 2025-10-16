@@ -102,11 +102,94 @@ class GeminiWrapper:
             out["text"] = json.dumps(json_out)
             return out
 
-        # detect tool request
-        if tools and ("price" in joined or "giá" in joined):
-            tool_name = getattr(tools[0], "__name__", None)
+        # detect tool request and generate appropriate arguments
+        if tools and len(tools) > 0:
+            tool = tools[0]
+            tool_name = getattr(tool, "__name__", None)
+            
             if tool_name:
-                out["function_call"] = {"name": tool_name, "arguments": {"ticker": "MOCK"}}
+                # Generate appropriate arguments based on tool name
+                arguments = {}
+                
+                # Extract company/ticker names from query
+                # Common Vietnamese stock codes
+                vn_stocks = ["fpt", "vcb", "hpg", "vnm", "mwg", "vhm", "tpb", "tcb", "bid", "ctg", "vib"]
+                found_stock = None
+                for stock in vn_stocks:
+                    if stock in joined:
+                        found_stock = stock.upper()
+                        break
+                
+                # Map tool names to their expected arguments
+                if tool_name == "get_stock_symbol":
+                    # Extract company name from query
+                    company = found_stock or "FPT"
+                    arguments = {"company_name": company}
+                    
+                elif tool_name in ["get_stock_price", "get_fundamentals", "get_sector_mapping", 
+                                  "calculate_ratios", "estimate_fair_value", "analyze_cashflow",
+                                  "get_technical_indicators", "get_risk_metrics", "generate_price_chart",
+                                  "get_income_statement", "get_balance_sheet", "get_pattern_recognition",
+                                  "get_candlestick_analysis", "get_signal_summary", "get_advanced_ratios"]:
+                    ticker = f"{found_stock}.VN" if found_stock else "FPT.VN"
+                    arguments = {"ticker": ticker}
+                    
+                elif tool_name == "get_exchange_info":
+                    if "hose" in joined:
+                        arguments = {"exchange": "HOSE"}
+                    elif "hnx" in joined:
+                        arguments = {"exchange": "HNX"}
+                    else:
+                        arguments = {"exchange": "HOSE"}
+                        
+                elif tool_name == "get_currency_rate":
+                    # Extract currency codes
+                    from_curr = "USD"
+                    to_curr = "VND"
+                    if "usd" in joined:
+                        from_curr = "USD"
+                    if "vnd" in joined or "việt nam" in joined:
+                        to_curr = "VND"
+                    arguments = {"from_currency": from_curr, "to_currency": to_curr, "amount": 1.0}
+                    
+                elif tool_name == "get_macro_data":
+                    country = "Vietnam" if "việt nam" in joined or "vietnam" in joined else "US"
+                    # Map Vietnamese terms to indicators
+                    if "lạm phát" in joined or "inflation" in joined or "cpi" in joined:
+                        indicator = "inflation_cpi"
+                    elif "gdp" in joined:
+                        indicator = "gdp"
+                    elif "thất nghiệp" in joined or "unemployment" in joined:
+                        indicator = "unemployment"
+                    elif "lãi suất" in joined or "interest" in joined:
+                        indicator = "interest_rate"
+                    else:
+                        indicator = "gdp"
+                    arguments = {"country": country, "indicator": indicator}
+                    
+                elif tool_name == "google_search" or tool_name == "search_news":
+                    # Extract search query
+                    query = "FPT stock news" if found_stock else "stock market news"
+                    arguments = {"query": query}
+                    
+                elif tool_name == "compare_fundamentals" or tool_name == "compare_with_peers":
+                    # Need multiple tickers
+                    tickers = ["FPT.VN", "MWG.VN", "VCB.VN"]
+                    arguments = {"tickers": tickers}
+                    
+                elif tool_name == "get_correlation_matrix":
+                    tickers = ["FPT.VN", "MWG.VN", "VCB.VN"]
+                    arguments = {"tickers": tickers, "period": "1y"}
+                    
+                elif tool_name == "analyze_portfolio":
+                    portfolio = {"FPT.VN": 0.4, "MWG.VN": 0.3, "VCB.VN": 0.3}
+                    arguments = {"portfolio": portfolio}
+                    
+                else:
+                    # Default fallback
+                    arguments = {"ticker": "FPT.VN"}
+                
+                out["function_call"] = {"name": tool_name, "arguments": arguments}
                 return out
 
         out["text"] = "[-] Mock answer: cannot do complex reasoning in mock mode."
