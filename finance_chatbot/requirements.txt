@@ -18,3 +18,7 @@ openai>=1.0.0  # For Gemini API via OpenAI compatibility layer
 yfinance>=0.2.25
 jsonschema>=4.8
 python-dotenv>=1.0.0  # For loading environment variables
+
+# API Framework
+fastapi>=0.104.0
+uvicorn>=0.24.0

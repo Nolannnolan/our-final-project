@@ -109,3 +109,8 @@ build/
 *.toml
 test_results.json
 /finance_chatbot/finance_agent/tools/intent_tools.py
+*.md
+example_with_history.py
+// personal_finance_chatbot
+ChatUI
+chatgpt-ai-template

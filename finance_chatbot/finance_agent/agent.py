@@ -207,16 +207,38 @@ def _map_aliases_to_signature(args: Dict[str, Any], func: Callable) -> Dict[str,
 
 
 class FinancialAgent:
-    def __init__(self, model: str = "gemini-2.0-flash", verbose: bool = True):
+    def __init__(self, model: str = "gemini-2.5-flash", verbose: bool = True, lazy_load: bool = True):
         configure_logging(verbose)
-        self.gemini = GeminiWrapper(model=model)
+        self.gemini = GeminiWrapper(model=model, enable_history=False)  # We manage history at agent level
         self.registry = registry
-        # build a vector index for tool search (may return docs with metadata.tool_name)
-        try:
-            self.tool_index = build_tool_vector_index_from_registry(self.registry)
-        except Exception as e:
-            logger.warning("Failed to build tool vector index: %s. Continuing without index.", e)
-            self.tool_index = None
+        self._tool_index = None  # Lazy loaded
+        self.lazy_load = lazy_load
+        
+        # Build tool index immediately if not lazy loading
+        if not lazy_load:
+            self._build_tool_index()
+        
+        # Conversation history for this agent instance
+        self.conversation_history: List[Dict[str, str]] = []
+        
+        # Callback for tool execution events
+        self.tool_callback = None
+    
+    def _build_tool_index(self):
+        """Build tool index on demand"""
+        if self._tool_index is None:
+            try:
+                self._tool_index = build_tool_vector_index_from_registry(self.registry)
+            except Exception as e:
+                logger.warning("Failed to build tool vector index: %s. Continuing without index.", e)
+                self._tool_index = False  # Mark as failed
+    
+    @property
+    def tool_index(self):
+        """Lazy load tool index when first accessed"""
+        if self._tool_index is None and self.lazy_load:
+            self._build_tool_index()
+        return self._tool_index if self._tool_index else None
 
     def _clean_json_str(self, raw: str) -> str:
         """Loại bỏ code fence ```json ... ``` nếu có."""
@@ -229,15 +251,25 @@ class FinancialAgent:
         return cleaned.strip()
 
     def generate_subquestions_from_query(self, user_query: str) -> List[SubQuestion]:
+        # Build context from conversation history
+        context_str = ""
+        if self.conversation_history:
+            context_str = "\n\nConversation context (previous exchanges):\n"
+            for i, exchange in enumerate(self.conversation_history[-3:], 1):  # Last 3 exchanges
+                context_str += f"\nExchange {i}:\n"
+                context_str += f"User: {exchange['user_query']}\n"
+                context_str += f"Assistant: {exchange['assistant_response'][:200]}...\n"  # Truncate for brevity
+        
         prompt = (
             GENERATE_SUBQUESTION_SYSTEM_PROMPT_TEMPLATE
-            + f"\n\nUser query:\n{user_query}\n"
+            + context_str
+            + f"\n\nCurrent user query:\n{user_query}\n"
         )
         msgs = [
             {"role": "system", "content": GENERATE_SUBQUESTION_SYSTEM_PROMPT_TEMPLATE},
             {"role": "user", "content": prompt},
         ]
-        out = self.gemini.generate(msgs, tools=None)
+        out = self.gemini.generate(msgs, tools=None, use_history=False, save_to_history=False)
         raw_text = out.get("text") or "[]"
         cleaned = self._clean_json_str(raw_text)
         try:
@@ -338,6 +370,13 @@ class FinancialAgent:
             if technical and technical.func not in tools:
                 tools.insert(0, technical.func)
 
+        # Chart / Graph / Visualization
+        if any(word in q for word in ["biểu đồ", "chart", "graph", "vẽ", "draw", "plot", "visualize", 
+                                       "biến động giá", "price movement", "price chart", "lịch sử giá"]):
+            chart = self.registry.get("generate_stock_price_chart")
+            if chart and chart.func not in tools:
+                tools.insert(0, chart.func)
+        
         # Price / Stock price
         if any(word in q for word in ["giá", "price", "stock price", "giá cổ phiếu", "thị giá"]):
             price = self.registry.get("get_stock_price")
@@ -368,12 +407,23 @@ class FinancialAgent:
         self, id: int, resolved_question: str, dependencies: List[dict], user_query: str
     ):
         dep_str = json.dumps(dependencies, ensure_ascii=False, default=str)
+        
+        # Add conversation context
+        context_str = ""
+        if self.conversation_history:
+            context_str = "\n\nConversation context (recent history):\n"
+            for i, exchange in enumerate(self.conversation_history[-2:], 1):  # Last 2 exchanges
+                context_str += f"Q{i}: {exchange['user_query']}\n"
+                context_str += f"A{i}: {exchange['assistant_response'][:150]}...\n"
+        
         content = SUBQUESTION_ANSWER_PROMPT
         content = content.replace("{current_datetime}", datetime.datetime.utcnow().isoformat())
         content = content.replace("{id}", str(id))
         content = content.replace("{subquestion}", resolved_question)
         content = content.replace("{dependencies}", dep_str)
         content = content.replace("{user_query}", user_query)
+        content += context_str
+        
         msgs = [
             {"role": "system", "content": "You are a financial assistant."},
             {"role": "user", "content": content},
@@ -405,14 +455,14 @@ class FinancialAgent:
 
             # if no tool appropriate, ask LLM normally
             if not tools:
-                out = self.gemini.generate(msgs, tools=None)
+                out = self.gemini.generate(msgs, tools=None, use_history=False, save_to_history=False)
                 ans_text = out.get("text") or ""
                 ans_obj = {"id": sq_id, "answer": ans_text, "used_tools": [], "extracted_data": {}}
                 answered_by_id[sq_id] = ans_obj
                 continue
 
             # --- ask LLM with tool metadata (tools passed to wrapper may be used in function_call detection) ---
-            out = self.gemini.generate(msgs, tools=tools, function_call="auto")
+            out = self.gemini.generate(msgs, tools=tools, function_call="auto", use_history=False, save_to_history=False)
             raw_text = out.get("text")
             fc = out.get("function_call")
 
@@ -458,10 +508,28 @@ class FinancialAgent:
                     mapped_args = fargs
 
                 logger.info("Calling tool %s with args %s (raw=%s)", chosen_name, mapped_args, fargs_raw)
+                
+                # Trigger tool callback if set
+                if self.tool_callback:
+                    self.tool_callback({
+                        "type": "tool_start",
+                        "tool_name": chosen_name,
+                        "question": resolved_text,
+                        "args": mapped_args
+                    })
+                
                 try:
                     # execute
                     result = self._call_callable(chosen_func, mapped_args)
                     extracted = result if isinstance(result, dict) else {"result": result}
+                    
+                    # Trigger tool completion callback
+                    if self.tool_callback:
+                        self.tool_callback({
+                            "type": "tool_complete",
+                            "tool_name": chosen_name,
+                            "result": extracted
+                        })
                     # give the LLM the tool output for finalization / commentary
                     follow_msgs = msgs + [
                         {
@@ -469,7 +537,7 @@ class FinancialAgent:
                             "content": f"Tool {chosen_name} returned: {json.dumps(extracted, ensure_ascii=False)}",
                         }
                     ]
-                    out2 = self.gemini.generate(follow_msgs, tools=None)
+                    out2 = self.gemini.generate(follow_msgs, tools=None, use_history=False, save_to_history=False)
                     final_text = out2.get("text") or str(extracted)
                     ans_obj = {
                         "id": sq_id,
@@ -498,15 +566,58 @@ class FinancialAgent:
                 answered_by_id[sq_id] = ans_obj
 
         # final aggregation prompt
+        # Add conversation context for better coherence
+        context_str = ""
+        if self.conversation_history:
+            context_str = "\n\nConversation context:\n"
+            for exchange in self.conversation_history[-2:]:
+                context_str += f"Previous Q: {exchange['user_query']}\n"
+                context_str += f"Previous A: {exchange['assistant_response'][:200]}...\n\n"
+        
         final_prompt = (
             FINAL_ANSWER_PROMPT
-            + f"\n\nCâu hỏi gốc:\n{user_query}\n\n"
+            + context_str
+            + f"\n\nCâu hỏi hiện tại:\n{user_query}\n\n"
             + f"Các subquestions và kết quả:\n{json.dumps(list(answered_by_id.values()), ensure_ascii=False)}\n\n"
         )
         final_msgs = [
             {"role": "system", "content": "Bạn là một trợ lý tài chính."},
             {"role": "user", "content": final_prompt},
         ]
-        final_out = self.gemini.generate(final_msgs, tools=None)
+        final_out = self.gemini.generate(final_msgs, tools=None, use_history=False, save_to_history=False)
         final_text = final_out.get("text") or "No final text"
-        return {"report": final_text, "answered_subquestions": list(answered_by_id.values())}
+        
+        # Save this exchange to conversation history
+        self.conversation_history.append({
+            "user_query": user_query,
+            "assistant_response": final_text,
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "answered_subquestions": list(answered_by_id.values())
+        })
+        
+        # Keep only last 10 exchanges to avoid context overflow
+        if len(self.conversation_history) > 10:
+            self.conversation_history = self.conversation_history[-10:]
+        
+        return {
+            "report": final_text, 
+            "answered_subquestions": list(answered_by_id.values()),
+            "subquestions": subs_raw  # Include original subquestions for debugging
+        }
+    
+    def get_conversation_history(self) -> List[Dict[str, Any]]:
+        """Get the conversation history for this agent instance."""
+        return self.conversation_history.copy()
+    
+    def clear_conversation_history(self) -> None:
+        """Clear the conversation history for this agent instance."""
+        self.conversation_history = []
+        logger.info("Conversation history cleared")
+    
+    def get_conversation_summary(self) -> Dict[str, Any]:
+        """Get a summary of the conversation history."""
+        return {
+            "total_exchanges": len(self.conversation_history),
+            "first_exchange_time": self.conversation_history[0]["timestamp"] if self.conversation_history else None,
+            "last_exchange_time": self.conversation_history[-1]["timestamp"] if self.conversation_history else None,
+        }
