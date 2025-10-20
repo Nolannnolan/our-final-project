@@ -93,6 +93,7 @@ from .tools.pdf_parse import parse_financial_report
 from .tools.ratios import calculate_ratios
 from .tools.stock_price import get_stock_price
 from .tools.stock_symbol import get_stock_symbol
+from .tools.stock_price_chart import generate_stock_price_chart  # New combined tool
 
 # New tools - Phase 1
 from .tools.technical_indicators import get_technical_indicators
@@ -130,11 +131,20 @@ from .tools.signal_summary import get_signal_summary
 
 # ========== Register Existing Tools ==========
 
+# Old chart tool - disabled in favor of generate_stock_price_chart
+# registry.register(
+#     name="generate_price_chart",
+#     description="Generate a price chart for a given stock ticker",
+#     func=generate_price_chart,
+# )
+
+# New improved chart tool that handles everything
 registry.register(
-    name="generate_price_chart",
-    description="Generate a price chart for a given stock ticker",
-    func=generate_price_chart,
+    name="generate_stock_price_chart",
+    description="Generate a stock price chart with historical data for a given ticker. Automatically fetches historical prices and creates a chart. Use period like '1d', '5d', '1mo', '3mo', '6mo', '1y' to specify time range. Perfect for visualizing price movements.",
+    func=generate_stock_price_chart,
 )
+
 registry.register(
     name="get_fundamentals",
     description="Retrieve fundamental information for a stock ticker including market cap, sector, revenue, and earnings",
