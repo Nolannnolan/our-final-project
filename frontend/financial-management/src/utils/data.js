@@ -18,6 +18,12 @@ export const SIDE_MENU_DATA = [
     path: "/expense",
   },
   {
+    id: "04",
+    label: "News",
+    icon: "fa-solid fa-newspaper",
+    path: "/news",
+  },
+  {
     id: "06",
     label: "Logout",
     icon: "fa-solid fa-right-from-bracket",

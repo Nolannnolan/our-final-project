@@ -1,15 +1,16 @@
 import React from 'react'
 import { XAxis, YAxis, ResponsiveContainer, CartesianGrid, Area, AreaChart, Tooltip } from "recharts";
 
-const CustomLineChart = ({data}) => {
+const CustomLineChart = ({data, dataKey}) => {
 
     const CustomTooltip = ({active, payload}) => {
         if(active && payload && payload.length){
+            const item = payload[0].payload;
             return (
                 <div className = "bg-white shadow-md rounded-lg p-2 border border-gray-300">
-                    <p className='text-xs font-semibold text-purple-800 mb-1'>{payload[0].payload.category}</p>
-                    <p className='text-sm text-gray-600'>
-                        Amount: <span className='text-sm font-medium text-gray-900'>${payload[0].payload.amount}</span>
+                    <p className='text-xs font-semibold text-purple-800 mb-1'>{item[dataKey]}</p>
+                    <p className = "text-sm text-gray-600">
+                        Amount: <span className='text-sm font-medium text-gray-900'>${item.amount}</span>
                     </p>
                 </div>
             )

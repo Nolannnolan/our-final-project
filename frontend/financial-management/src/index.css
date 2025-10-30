@@ -14,7 +14,7 @@
 
   body {
     background-color: #fcfbfc;
-    overflow-x: hidden;
+    /* overflow-x: hidden; */
   }
 }
 
@@ -40,4 +40,22 @@
 
 .add-btn-fill{
   @apply text-white bg-primary
+}
+
+.scroll-thin {
+  @apply overflow-x-auto;
+}
+
+/* Custom scrollbar style */
+.scroll-thin::-webkit-scrollbar {
+  height: 6px;
+  @apply rounded-full;
+}
+
+.scroll-thin::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.scroll-thin::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors duration-200;
 }

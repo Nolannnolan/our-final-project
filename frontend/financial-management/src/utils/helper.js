@@ -34,7 +34,9 @@ export const addThousandsSeperator = (num) => {
 }
 
 export const prepareExpenseBarChartData = (data = []) =>{
-  const chartData = data.map((item) =>({
+  const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date))
+  const chartData = sortedData.map((item) => ({
+    month: moment(item?.date).format('Do MMM'),
     category: item?.category,
     amount: item?.amount,
   }))
@@ -63,4 +65,35 @@ export const prepareExpenseLineChartData  = (data = [])=>{
   }))
 
   return chartData;
+}
+
+export const formatTimeAgo = (pubDate) =>{
+  if (!pubDate) return "😁😁😁😁";
+
+  try {
+    // 👉 Parse chuỗi "30/10/2025 20:29:25"
+    const [timePart, datePart] = pubDate.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    const [hour, minute, second] = timePart.split(":").map(Number);
+
+    // 👉 Tạo đối tượng Date chuẩn (múi giờ VN)
+    const date = new Date(year, month - 1, day, hour, minute, second);
+
+    // 👉 Tính khoảng thời gian chênh lệch (milliseconds)
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    // 👉 Trả về dạng dễ hiểu
+    if (diffMins < 1) return "Vừa xong";
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    if (diffDays < 7) return `${diffDays} ngày trước`;
+    return diffDays; // nếu quá 7 ngày thì hiển thị ngày gốc
+  } catch (err) {
+    console.error("❌ Lỗi khi xử lý thời gian:", err);
+    return pubDate;
+  }
 }

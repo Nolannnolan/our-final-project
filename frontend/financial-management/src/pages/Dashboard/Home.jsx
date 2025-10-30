@@ -12,6 +12,7 @@ import ExpenseTransactions from '../../components/Dashboard/ExpenseTransactions'
 import Last30DaysExpenses from '../../components/Dashboard/Last30DaysExpenses';
 import RecentIncomeWithChart from '../../components/Dashboard/RecentIncomeWithChart';
 import RecentIncome from '../../components/Dashboard/RecentIncome';
+import IncomeExpenseCorrelation from '../../components/Dashboard/IncomeExpenseCorrelation';
 
 const Home = () => {
   useUserAuth();
@@ -68,6 +69,11 @@ const Home = () => {
             color = "bg-red-500">
           </InfoCard> 
         </div>
+
+        <IncomeExpenseCorrelation
+          dataIncome = {dashboardData?.last30DaysIncome?.transactions||[]}
+          dataExpense = {dashboardData?.last30DaysExpenses?.transactions || []}
+        />
 
         <div className = "grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <RecentTransactions

@@ -25,4 +25,7 @@ export const API_PATHS = {
   IMAGE: {
     UPLOAD_IMAGE: "/api/v1/auth/upload-image",
   },
+  NEWS: {
+    GET_NEWS: "/api/v1/news",
+  }
 };
