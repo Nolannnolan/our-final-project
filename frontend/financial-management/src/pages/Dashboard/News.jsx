@@ -4,7 +4,7 @@ import { useUserAuth } from '../../hooks/useUserAuth';
 import NewsCard from '../../components/NewsCard';
 import StockCard from '../../components/StockCard';
 import MarketChart from '../../components/MarketChart';
-import ChatPanel from '../../components/ChatPanel';
+import EnhancedChatPanel from '../../components/EnhancedChatPanel';
 
 const News = () => {
   useUserAuth();
@@ -163,7 +163,7 @@ const News = () => {
         </div>
         <div className="fixed right-0 top-0 bottom-0 w-100 z-30 bg-white border-l border-gray-200">
           <div className="h-full flex flex-col">
-            <ChatPanel />
+            <EnhancedChatPanel />
           </div>
         </div>
       </div>

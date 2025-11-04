@@ -116,7 +116,7 @@ def get_stock_price(
                 
                 # Use Ticker with fresh session
                 t = yf.Ticker(try_sym)
-                hist = t.history(period="5d")
+                hist = t.history(period="5d", auto_adjust=True)
                 
                 if hist is None:
                     logger.warning("%s: download() returned None", try_sym)
@@ -125,7 +125,7 @@ def get_stock_price(
                 if hist.empty:
                     logger.warning("%s: download() returned empty dataframe with period=5d", try_sym)
                     # Try with longer period
-                    hist = download(try_sym, period="1mo", progress=False)
+                    hist = download(try_sym, period="1mo", progress=False, auto_adjust=True)
                     if hist is None or hist.empty:
                         logger.warning("%s: download() still empty with period=1mo", try_sym)
                         continue

@@ -129,6 +129,9 @@ from .tools.pattern_recognition import get_pattern_recognition
 from .tools.candlestick_analysis import get_candlestick_analysis
 from .tools.signal_summary import get_signal_summary
 
+# New tool: Historical Price Data
+from .tools.historical_price import get_historical_stock_price
+
 # ========== Register Existing Tools ==========
 
 # Old chart tool - disabled in favor of generate_stock_price_chart
@@ -172,8 +175,13 @@ registry.register(
 )
 registry.register(
     name="get_stock_price",
-    description="Fetch current or historical stock price for a ticker symbol",
+    description="Fetch CURRENT/LATEST stock price for a ticker symbol. Returns single price point. For historical price series over time, use get_historical_stock_price instead.",
     func=get_stock_price,
+)
+registry.register(
+    name="get_historical_stock_price",
+    description="Fetch HISTORICAL stock price data over time as structured data (list of prices with dates). Use this when user asks for price changes, trends, or price movements over a period. Supports periods like '1d', '5d', '1mo', '3mo', '6mo', '1y' and intervals like '1d', '1h', '1wk'. Returns open, high, low, close, volume for each date with summary statistics including change percentage.",
+    func=get_historical_stock_price,
 )
 registry.register(
     name="get_stock_symbol",
