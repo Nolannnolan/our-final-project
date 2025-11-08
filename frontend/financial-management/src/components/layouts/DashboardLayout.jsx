@@ -10,7 +10,7 @@ const DashBoardLayout = ({children, activeMenu}) => {
       <Navbar activeMenu={activeMenu}></Navbar>
       {user && (
         <div className ="flex">
-            <div className = "max-[1080px]:hidden">
+            <div className = "max-[1024px]:hidden">
                 <SideMenu activeMenu={activeMenu}></SideMenu>
             </div>
             <div className='grow mx-5'>{children}</div>

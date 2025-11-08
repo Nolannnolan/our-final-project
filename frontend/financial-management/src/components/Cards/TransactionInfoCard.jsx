@@ -17,7 +17,7 @@ const TransactionInfoCard = ({
         {icon ? (
             <img src={`${icon}`} alt="title" className = "w-6 h-6"/>
         ) : (
-            <i class="fa-solid fa-utensils"></i>
+            <i className="fa-solid fa-utensils"></i>
         )}
       </div>
 
@@ -31,7 +31,7 @@ const TransactionInfoCard = ({
             {!hideDeleteBtn && (
                 <button className = "text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 onClick={onDelete}>
-                    <i class="fa-solid fa-trash-can size-[18px]"></i>
+                    <i className="fa-solid fa-trash-can size-[18px]"></i>
                 </button>
             )}
 
@@ -40,9 +40,9 @@ const TransactionInfoCard = ({
                     {type === "income" ? "+" : "-"}${amount}
                 </h6>
                 {type === "income" ? (
-                    <i class="fa-solid fa-arrow-up"></i>
+                    <i className="fa-solid fa-arrow-up"></i>
                 ) : (
-                    <i class="fa-solid fa-arrow-down"></i>
+                    <i className="fa-solid fa-arrow-down"></i>
                 )}
             </div>
         </div>

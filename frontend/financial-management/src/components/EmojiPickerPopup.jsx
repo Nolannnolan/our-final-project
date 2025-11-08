@@ -13,7 +13,7 @@ const EmojiPickerPopup = ({icon, onSelect}) => {
                     {icon ? (
                         <img src={icon} alt="Icon" className='w-12 h-12' />
                     ) : (
-                        <i class="fa-solid fa-icons"></i>
+                        <i className="fa-solid fa-icons"></i>
                     )}
                 </div>
                 <p className = "hover:text-primary p-4 bg-purple-50 hover:bg-purple-100 rounded-xl text-sm">{icon ? "Change Icon" : "Pick Icon"}</p>
@@ -24,7 +24,7 @@ const EmojiPickerPopup = ({icon, onSelect}) => {
                         className='w-7 h-7 flex items-center justify-center bg-white border border-gray-200 rounded-full absolute -top-2 -right-2 z-10 cursor-pointer'
                         onClick={() => setIsOpen(false)}
                     >
-                        <i class="fa-solid fa-x"></i>
+                        <i className="fa-solid fa-x"></i>
                     </button>
 
                     <EmojiPicker

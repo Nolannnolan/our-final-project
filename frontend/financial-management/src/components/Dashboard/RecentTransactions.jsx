@@ -7,7 +7,7 @@ const RecentTransactions = ({transactions, onSeeMore}) => {
     <div className = "card">
       <div className = "flex items-center justify-between">
         <h5 className = "text-lg">Recent Transactions</h5>
-        <button className = "card-btn" onClick = {onSeeMore}>See All <i class="fa-solid fa-arrow-right "></i></button>
+        <button className = "card-btn" onClick = {onSeeMore}>See All <i className="fa-solid fa-arrow-right "></i></button>
       </div>
 
       <div className = "mt-6">

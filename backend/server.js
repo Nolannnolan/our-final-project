@@ -9,6 +9,8 @@ const expenseRoutes = require("./routes/expenseRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const newsRoutes = require("./routes/newsRoutes");
 const tickerRoutes = require("./routes/newsDashboardRoutes");
+const detailsStockRoutes = require("./routes/detailsStockRoutes");
+const stockSummaryRoutes = require("./routes/stockSummaryRoutes");
 
 const app = express();
 
@@ -31,7 +33,8 @@ app.use("/api/v1/expense", expenseRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/news", newsRoutes);
 app.use("/api/v1/ticker", tickerRoutes);
-
+app.use("/api/v1/details-stock", detailsStockRoutes);
+app.use("/api/v1/stock-summary", stockSummaryRoutes);
 
 // Server uploads folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

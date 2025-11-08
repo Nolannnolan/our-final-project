@@ -22,10 +22,13 @@ export const API_PATHS = {
     DELETE_EXPENSE: (expenseId) => `/api/v1/expense/${expenseId}`,
     DOWNLOAD_EXPENSE: `/api/v1/expense/downloadexcel`,
   },
-  IMAGE: {
-    UPLOAD_IMAGE: "/api/v1/auth/upload-image",
-  },
   NEWS: {
     GET_NEWS: "/api/v1/news",
-  }
+  },
+  TICKER: {
+    GET_TICKER_BAR: "/api/v1/ticker/get-bar",
+  },
+  DETAILS_STOCK: {
+    GET_DETAILS_STOCK: "/api/v1/details-stock",
+  },
 };

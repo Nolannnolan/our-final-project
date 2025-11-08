@@ -29,24 +29,24 @@ const Article = () => {
   return (
     <div className='card'>
       <div className='flex items-center justify-between'>
-            <div className=''>
-                <h5 className='text-lg m-4'>Tin tức mới</h5>
+        <div className=''>
+          <h5 className='text-lg m-4'>Tin tức mới</h5>
 
-                <div className="space-y-4">
-                  {news.map((item, index) => (
-                    <NewsCard 
-                        key={index}
-                        title = {item.title}
-                        source = {item.source}
-                        pubDate = {formatTimeAgo(item.pubDate)}
-                        image = {item.image}
-                        link= {item.link}
-                        logo = {item.logo}
-                    />
-                  ))}
-                </div>
-            </div>
+          <div className="space-y-4">
+            {news.map((item, index) => (
+              <NewsCard 
+                key={index}
+                title = {item.title}
+                source = {item.source}
+                pubDate = {formatTimeAgo(item.pubDate)}
+                image = {item.image}
+                link= {item.link}
+                logo = {item.logo}
+              />
+            ))}
+          </div>
         </div>
+      </div>
     </div>
   )
 }

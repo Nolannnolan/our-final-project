@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Send, Paperclip, Plus, Settings, Copy, Trash2 } from 'lucide-react';
+import { Send, Paperclip, Plus, Settings, Copy, Trash2, X } from 'lucide-react';
 
-const ChatPanel = () => {
+const ChatPanel = ({ onClose }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -46,7 +46,7 @@ const ChatPanel = () => {
   };
 
   return (
-    <div className="w-full bg-white h-full flex flex-col">
+    <div className="w-[28rem] bg-white border border-gray-200 rounded-3xl shadow-2xl flex flex-col h-[36rem] max-h-[85vh] overflow-hidden">
       <div className="p-4 border-b border-gray-200 space-y-3">
         <div className="flex items-center justify-between">
           <select 
@@ -65,6 +65,14 @@ const ChatPanel = () => {
             <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
               <Settings className="w-5 h-5 text-gray-600" />
             </button>
+            {onClose && (
+              <button 
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            )}
           </div>
         </div>
       </div>
