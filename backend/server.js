@@ -13,6 +13,7 @@ const watchlistRoutes = require("./routes/watchlistRoutes");
 const financeRoutes = require("./routes/financeRoutes");
 const { startBinanceStream } = require("./streams/binanceStream");
 const assetsRoutes = require('./routes/assetsRoutes');
+const priceRoutes = require('./routes/priceRoutes');
 
 const app = express();
 
@@ -38,7 +39,10 @@ app.use("/api/v1/ticker", tickerRoutes);
 app.use("/api/v1/watchlist", watchlistRoutes);
 app.use("/api/v1/finance", financeRoutes);
 app.use('/api/v1/assets', assetsRoutes);
+app.use('/api/v1/price', priceRoutes);
 
+const debugRoutes = require("./routes/debug");
+app.use("/debug", debugRoutes);
 
 // Server uploads folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
