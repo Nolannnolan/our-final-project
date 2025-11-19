@@ -1,0 +1,142 @@
+/**
+ * CRON JOB: Intraday Data Sync
+ * 
+ * Fetches intraday data (1m, 5m, 15m, 1h) for all assets
+ * and stores in price_ticks for continuous aggregates
+ * 
+ * Schedule:
+ * - Crypto (1m): every 5 minutes
+ * - Stocks (5m): every 15 minutes during market hours
+ */
+
+const cron = require('node-cron');
+const { syncAllCryptoIntraday } = require('../services/intraday/binanceIntraday');
+const { syncAllStockIntraday } = require('../services/intraday/yahooIntraday');
+
+/**
+ * Sync crypto intraday data (Binance)
+ * Runs every 5 minutes
+ */
+function scheduleCryptoSync() {
+  // Every 5 minutes
+  cron.schedule('*/5 * * * *', async () => {
+    console.log('\n⏰ [CRON] Starting crypto intraday sync...');
+    try {
+      await syncAllCryptoIntraday('1m', 100); // Last 100 1m candles (~1.5 hours)
+      console.log('✅ [CRON] Crypto sync completed');
+    } catch (err) {
+      console.error('❌ [CRON] Crypto sync failed:', err.message);
+    }
+  });
+
+  console.log('✅ Crypto intraday sync scheduled (every 5 minutes)');
+}
+
+/**
+ * Sync stock/forex intraday data (Yahoo Finance)
+ * Runs every 15 minutes during market hours
+ */
+function scheduleStockSync() {
+  // Every 15 minutes
+  cron.schedule('*/15 * * * *', async () => {
+    const hour = new Date().getHours();
+    
+    // Only sync during typical trading hours (9 AM - 5 PM)
+    // Adjust for your timezone
+    if (hour < 9 || hour > 17) {
+      console.log('⏭️ [CRON] Stock sync skipped (outside market hours)');
+      return;
+    }
+
+    console.log('\n⏰ [CRON] Starting stock intraday sync...');
+    try {
+      // Fetch 5m candles for last 1 day
+      await syncAllStockIntraday('5m', '1d', 50);
+      console.log('✅ [CRON] Stock sync completed');
+    } catch (err) {
+      console.error('❌ [CRON] Stock sync failed:', err.message);
+    }
+  });
+
+  console.log('✅ Stock intraday sync scheduled (every 15 minutes)');
+}
+
+/**
+ * Hourly deep sync for all assets
+ * Runs every hour
+ */
+function scheduleHourlyDeepSync() {
+  // Every hour at minute 0
+  cron.schedule('0 * * * *', async () => {
+    console.log('\n⏰ [CRON] Starting hourly deep sync...');
+    
+    try {
+      // Crypto: fetch last 500 1m candles (~8 hours)
+      console.log('📊 Syncing crypto (1m, 500 candles)...');
+      await syncAllCryptoIntraday('1m', 500);
+      
+      // Stocks: fetch last 5 days of 5m data
+      console.log('📊 Syncing stocks (5m, 5 days)...');
+      await syncAllStockIntraday('5m', '5d', 100);
+      
+      console.log('✅ [CRON] Hourly deep sync completed');
+    } catch (err) {
+      console.error('❌ [CRON] Hourly sync failed:', err.message);
+    }
+  });
+
+  console.log('✅ Hourly deep sync scheduled');
+}
+
+/**
+ * Start all intraday sync jobs
+ */
+function startIntradaySyncJobs() {
+  console.log('\n🚀 Starting intraday sync cron jobs...\n');
+  
+  scheduleCryptoSync();
+  scheduleStockSync();
+  scheduleHourlyDeepSync();
+  
+  console.log('\n✅ All intraday sync jobs scheduled\n');
+}
+
+/**
+ * Run one-time sync immediately
+ */
+async function runImmediateSync() {
+  console.log('\n🚀 Running immediate intraday sync...\n');
+  
+  try {
+    console.log('1️⃣ Syncing crypto (1m, 200 candles)...');
+    await syncAllCryptoIntraday('1m', 200);
+    
+    console.log('\n2️⃣ Syncing stocks (5m, 1 day, 50 assets)...');
+    await syncAllStockIntraday('5m', '1d', 50);
+    
+    console.log('\n✅ Immediate sync completed');
+  } catch (err) {
+    console.error('❌ Immediate sync failed:', err.message);
+  }
+}
+
+module.exports = {
+  startIntradaySyncJobs,
+  runImmediateSync,
+  scheduleCryptoSync,
+  scheduleStockSync,
+  scheduleHourlyDeepSync
+};
+
+// Run as standalone script
+if (require.main === module) {
+  runImmediateSync()
+    .then(() => {
+      console.log('\n🎯 Starting scheduled jobs...');
+      startIntradaySyncJobs();
+    })
+    .catch(err => {
+      console.error('Fatal error:', err);
+      process.exit(1);
+    });
+}

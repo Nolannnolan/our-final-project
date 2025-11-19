@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS price_ticks (
   asset_id INTEGER NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
   ts TIMESTAMPTZ NOT NULL,
   price DOUBLE PRECISION,
-  volume DOUBLE PRECISION
+  volume DOUBLE PRECISION,
+  PRIMARY KEY (asset_id, ts)
 );
 
 SELECT create_hypertable('price_ticks', 'ts', if_not_exists => TRUE);

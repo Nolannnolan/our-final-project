@@ -11,7 +11,8 @@ const newsRoutes = require("./routes/newsRoutes");
 const tickerRoutes = require("./routes/newsDashboardRoutes");
 const watchlistRoutes = require("./routes/watchlistRoutes");
 const financeRoutes = require("./routes/financeRoutes");
-const { startBinanceStream } = require("./streams/binanceStream");
+const { startBinanceStreamAll } = require("./streams/binanceStream");
+const { startIntradaySyncJobs } = require('./jobs/cron_intraday_sync');
 const assetsRoutes = require('./routes/assetsRoutes');
 const priceRoutes = require('./routes/priceRoutes');
 
@@ -50,10 +51,17 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 
-    // Start Binance stream after server up
+    // Start Binance realtime stream
     try {
-      startBinanceStream();
+      startBinanceStreamAll();
     } catch (err) {
       console.error('Failed to start Binance stream:', err);
+    }
+
+    // Start intraday sync cron jobs
+    try {
+      startIntradaySyncJobs();
+    } catch (err) {
+      console.error('Failed to start intraday sync jobs:', err);
     }
 });
