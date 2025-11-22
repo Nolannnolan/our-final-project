@@ -102,10 +102,11 @@ function startIntradaySyncJobs() {
 }
 
 /**
- * Run one-time sync immediately
+ * Run one-time sync immediately (LEGACY - Fixed limits)
+ * @deprecated Use runSmartSync() instead for gap-aware syncing
  */
 async function runImmediateSync() {
-  console.log('\n🚀 Running immediate intraday sync...\n');
+  console.log('\n🚀 Running immediate intraday sync (legacy mode)...\n');
   
   try {
     console.log('1️⃣ Syncing crypto (1m, 200 candles)...');
@@ -120,9 +121,25 @@ async function runImmediateSync() {
   }
 }
 
+/**
+ * Run smart sync with gap detection
+ * Automatically detects gaps and fetches only missing data
+ */
+async function runSmartSync() {
+  const { detectAndFillGaps } = require('../services/intraday/gapDetection');
+  
+  try {
+    await detectAndFillGaps();
+  } catch (err) {
+    console.error('❌ Smart sync failed:', err.message);
+    throw err;
+  }
+}
+
 module.exports = {
   startIntradaySyncJobs,
-  runImmediateSync,
+  runImmediateSync,    // Legacy: fixed limits
+  runSmartSync,        // Recommended: gap-aware
   scheduleCryptoSync,
   scheduleStockSync,
   scheduleHourlyDeepSync
@@ -130,7 +147,8 @@ module.exports = {
 
 // Run as standalone script
 if (require.main === module) {
-  runImmediateSync()
+  // Use smart sync by default (gap-aware)
+  runSmartSync()
     .then(() => {
       console.log('\n🎯 Starting scheduled jobs...');
       startIntradaySyncJobs();

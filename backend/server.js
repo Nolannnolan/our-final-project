@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const http = require("http");
 const cors = require("cors");
 const path = require("path");
 const connectDB = require("./config/db");
@@ -13,10 +14,15 @@ const watchlistRoutes = require("./routes/watchlistRoutes");
 const financeRoutes = require("./routes/financeRoutes");
 const { startBinanceStreamAll } = require("./streams/binanceStream");
 const { startIntradaySyncJobs } = require('./jobs/cron_intraday_sync');
+const { startFrontendWebSocket } = require('./streams/frontendWebSocket');
+const { startAlertMonitoring } = require('./services/alertSystem');
 const assetsRoutes = require('./routes/assetsRoutes');
 const priceRoutes = require('./routes/priceRoutes');
+const healthRoutes = require('./routes/healthRoutes');
+const marketRoutes = require('./routes/marketRoutes');
 
 const app = express();
+const server = http.createServer(app);
 
 // Middleware to handle CORS
 app.use(
@@ -41,15 +47,29 @@ app.use("/api/v1/watchlist", watchlistRoutes);
 app.use("/api/v1/finance", financeRoutes);
 app.use('/api/v1/assets', assetsRoutes);
 app.use('/api/v1/price', priceRoutes);
+app.use('/api/v1/health', healthRoutes);
+app.use('/api/v1/market', marketRoutes);
 
 const debugRoutes = require("./routes/debug");
 app.use("/debug", debugRoutes);
 
 // Server uploads folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+
+server.listen(PORT, () => {
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`🚀 Server started on port ${PORT}`);
+    console.log(`${'='.repeat(60)}\n`);
+
+    // Start Frontend WebSocket server (with room subscriptions)
+    try {
+      startFrontendWebSocket(server);
+      console.log('✅ Frontend WebSocket ready at ws://localhost:' + PORT + '/ws/prices\n');
+    } catch (err) {
+      console.error('Failed to start Frontend WebSocket:', err);
+    }
 
     // Start Binance realtime stream
     try {
@@ -64,4 +84,15 @@ app.listen(PORT, () => {
     } catch (err) {
       console.error('Failed to start intraday sync jobs:', err);
     }
+
+    // Start alert monitoring
+    try {
+      startAlertMonitoring(10); // Check every 10 minutes
+    } catch (err) {
+      console.error('Failed to start alert monitoring:', err);
+    }
+
+    console.log(`${'='.repeat(60)}`);
+    console.log('✅ All services started successfully');
+    console.log(`${'='.repeat(60)}\n`);
 });

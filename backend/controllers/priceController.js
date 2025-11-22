@@ -88,29 +88,30 @@ exports.getLatestPrice = async (req, res) => {
 };
 
 /**
- * GET /api/v1/price/history?symbol=BTCUSDT&tf=1m&limit=500&from=&to=
- * Production-grade chart API (TradingView-like)
+ * GET /api/v1/price/candles?symbol=BTCUSDT&timeframe=1m&limit=500&start=&end=
+ * Standard TradingView-style candles endpoint
  * 
  * Features:
  * - Filters out incomplete (current) candles
  * - Returns candles in ascending order (oldest → newest)
  * - Smart caching with TTL based on timeframe
+ * - Standard parameter names (timeframe, start, end)
  * 
  * Supports: 1m, 5m, 15m, 1h, 4h, 1d
  */
-exports.getPriceHistory = async (req, res) => {
+exports.getCandles = async (req, res) => {
   const symbol = (req.query.symbol || '').toUpperCase();
-  const tf = (req.query.tf || '1d').toLowerCase();
+  const timeframe = (req.query.timeframe || '1d').toLowerCase();
   const limit = parseInt(req.query.limit || '500', 10);
-  const from = req.query.from; // ISO timestamp
-  const to = req.query.to;     // ISO timestamp
+  const start = req.query.start; // ISO timestamp or unix timestamp
+  const end = req.query.end;     // ISO timestamp or unix timestamp
 
   if (!symbol) {
     return res.status(400).json({ error: 'symbol required' });
   }
 
   const validTfs = ['1m', '5m', '15m', '1h', '4h', '1d'];
-  if (!validTfs.includes(tf)) {
+  if (!validTfs.includes(timeframe)) {
     return res.status(400).json({ 
       error: 'invalid timeframe', 
       validTfs,
@@ -119,14 +120,28 @@ exports.getPriceHistory = async (req, res) => {
   }
 
   try {
-    // Check cache (only if no from/to specified)
-    if (!from && !to) {
-      const cached = await getCandlesCache(symbol, tf);
+    // Convert unix timestamps to ISO if needed
+    let startISO = start;
+    let endISO = end;
+    
+    if (start && !isNaN(start)) {
+      // Unix timestamp (seconds or milliseconds)
+      const timestamp = parseInt(start);
+      startISO = new Date(timestamp > 9999999999 ? timestamp : timestamp * 1000).toISOString();
+    }
+    
+    if (end && !isNaN(end)) {
+      const timestamp = parseInt(end);
+      endISO = new Date(timestamp > 9999999999 ? timestamp : timestamp * 1000).toISOString();
+    }
+
+    // Check cache (only if no time range specified)
+    if (!startISO && !endISO) {
+      const cached = await getCandlesCache(symbol, timeframe);
       if (cached && Array.isArray(cached) && cached.length > 0) {
-        // Cached data is already filtered and sorted
         return res.json({ 
           symbol, 
-          tf, 
+          timeframe, 
           count: Math.min(cached.length, limit),
           candles: cached.slice(0, limit), 
           source: 'cache' 
@@ -134,27 +149,25 @@ exports.getPriceHistory = async (req, res) => {
       }
     }
 
-    const table = getTableForTimeframe(tf);
-    const tfDuration = getTimeframeDuration(tf);
+    const table = getTableForTimeframe(timeframe);
+    const tfDuration = getTimeframeDuration(timeframe);
     
     // Calculate cutoff time for incomplete candle
-    // Current candle bucket is NOT complete yet, so exclude it
     const now = new Date();
-    const cutoffTime = to || now.toISOString();
+    const cutoffTime = endISO || now.toISOString();
     
     // Build query with optional time range
     let whereClauses = ['a.symbol = $1'];
     let params = [symbol];
     let paramIndex = 2;
 
-    if (from) {
+    if (startISO) {
       whereClauses.push(`p.ts >= $${paramIndex}`);
-      params.push(from);
+      params.push(startISO);
       paramIndex++;
     }
 
-    // CRITICAL: Filter out incomplete (current) candle
-    // Subtract one timeframe duration to ensure bucket is closed
+    // Filter out incomplete (current) candle
     const maxTs = new Date(new Date(cutoffTime).getTime() - tfDuration);
     whereClauses.push(`p.ts <= $${paramIndex}`);
     params.push(maxTs.toISOString());
@@ -174,7 +187,7 @@ exports.getPriceHistory = async (req, res) => {
     if (rows.length === 0) {
       return res.json({ 
         symbol, 
-        tf, 
+        timeframe, 
         table,
         count: 0,
         candles: [],
@@ -193,28 +206,26 @@ exports.getPriceHistory = async (req, res) => {
       volume: parseFloat(r.volume)
     }));
 
-    // CRITICAL: Reverse to get oldest → newest (TradingView standard)
-    // DB query returns DESC (newest first), but charts expect ASC
+    // Reverse to get oldest → newest (TradingView standard)
     candles.reverse();
 
-    // Cache if no time range specified (cache complete candles only)
-    if (!from && !to && candles.length > 0) {
-      // TTL based on timeframe (shorter = more frequent updates)
-      const cacheTTL = tf === '1m' ? 30 :      // 30s for 1m
-                       tf === '5m' ? 60 :      // 1min for 5m
-                       tf === '15m' ? 180 :    // 3min for 15m
-                       tf === '1h' ? 300 :     // 5min for 1h
-                       tf === '4h' ? 600 :     // 10min for 4h
-                       1800;                   // 30min for 1d
+    // Cache if no time range specified
+    if (!startISO && !endISO && candles.length > 0) {
+      const cacheTTL = timeframe === '1m' ? 30 :
+                       timeframe === '5m' ? 60 :
+                       timeframe === '15m' ? 180 :
+                       timeframe === '1h' ? 300 :
+                       timeframe === '4h' ? 600 :
+                       1800;
       
-      await setCandlesCache(symbol, tf, candles, cacheTTL).catch(err => {
+      await setCandlesCache(symbol, timeframe, candles, cacheTTL).catch(err => {
         console.error('Cache set error:', err.message);
       });
     }
 
     return res.json({ 
       symbol, 
-      tf, 
+      timeframe, 
       table,
       count: candles.length,
       candles, 
@@ -223,12 +234,36 @@ exports.getPriceHistory = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('getPriceHistory error:', err);
+    console.error('getCandles error:', err);
     res.status(500).json({ 
       error: 'failed', 
       message: err.message,
       symbol,
-      tf
+      timeframe
     });
   }
 };
+
+/**
+ * GET /api/v1/price/history?symbol=BTCUSDT&tf=1m&limit=500&from=&to=
+ * Legacy endpoint - redirects to getCandles
+ * Maintained for backward compatibility
+ * 
+ * @deprecated Use /candles endpoint instead
+ */
+exports.getPriceHistory = async (req, res) => {
+  // Map legacy parameters to new ones
+  const symbol = (req.query.symbol || '').toUpperCase();
+  const timeframe = (req.query.tf || '1d').toLowerCase();
+  const limit = parseInt(req.query.limit || '500', 10);
+  const start = req.query.from; // ISO timestamp
+  const end = req.query.to;     // ISO timestamp
+  
+  // Call getCandles with mapped parameters
+  req.query.timeframe = timeframe;
+  req.query.start = start;
+  req.query.end = end;
+  
+  return exports.getCandles(req, res);
+
+}
