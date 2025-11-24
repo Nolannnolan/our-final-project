@@ -4,62 +4,64 @@ import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
 
 const SYMBOL_DIRECTORY = [
-    { symbol: 'VNINDEX', name: 'VN-Index', type: 'index' },
+    { symbol: '^VNINDEX.VN', name: 'VN-Index', type: 'index' },
     { symbol: 'AAPL', name: 'Apple Inc.', type: 'stock' },
     { symbol: 'MSFT', name: 'Microsoft Corp.', type: 'stock' },
-    { symbol: 'BTC', name: 'Bitcoin', type: 'crypto' },
-    { symbol: 'ETH', name: 'Ethereum', type: 'crypto' },
-    { symbol: 'FPT', name: 'FPT Corp', type: 'stock' },
-    { symbol: 'VCB', name: 'Vietcombank', type: 'stock' },
-    { symbol: 'VHM', name: 'Vingroup', type: 'stock' },
+    { symbol: 'BTCUSDT', name: 'Bitcoin', type: 'crypto' },
+    { symbol: 'ETHUSDC', name: 'Ethereum', type: 'crypto' },
+    { symbol: 'FPT.VN', name: 'FPT Corp', type: 'stock' },
+    { symbol: 'FPT.VN', name: 'Vietcombank', type: 'stock' },
+    { symbol: 'VHM.VN', name: 'Vingroup', type: 'stock' },
     { symbol: 'MWG', name: 'Mobile World Group', type: 'stock' },
     { symbol: 'HDB', name: 'HDBank', type: 'stock' },
     { symbol: 'TSLA', name: 'Tesla Inc.', type: 'stock' },
-    { symbol: 'VIC', name: 'Vingroup JSC', type: 'stock' },
-    { symbol: 'HPG', name: 'Hoa Phat Group', type: 'stock' },
+    { symbol: 'VIC.VN', name: 'Vingroup JSC', type: 'stock' },
+    { symbol: 'HPG.VN', name: 'Hoa Phat Group', type: 'stock' },
     { symbol: 'SSI', name: 'SSI Securities', type: 'stock' },
-    { symbol: 'VND', name: 'VNDirect Securities', type: 'stock' },
+    { symbol: 'VND.VN', name: 'VNDirect Securities', type: 'stock' },
     { symbol: 'DOGE', name: 'Dogecoin', type: 'crypto' },
     { symbol: 'SOL', name: 'Solana', type: 'crypto' }
 ];
 
-const quoteRangeByType = {
-    index: [900, 1300],
-    stock: [20000, 150000],
-    crypto: [200, 65000]
+const formatPrice = (price, type) => {
+    if (type === 'index' || type === 'crypto') {
+        return price.toFixed(2);
+    }
+    // For stocks, format with thousand separators
+    return new Intl.NumberFormat('vi-VN').format(Math.round(price));
 };
 
-const createMockQuote = type => {
-    const [min, max] = quoteRangeByType[type] || [15000, 120000];
-    const rawPrice = Math.random() * (max - min) + min;
-    const rawChange = Math.random() * 6 - 3;
-    const formattedPrice = type === 'index'
-        ? rawPrice.toFixed(2)
-        : type === 'crypto'
-            ? rawPrice.toFixed(2)
-            : new Intl.NumberFormat('vi-VN').format(Math.round(rawPrice));
-    return {
-        price: formattedPrice,
-        change: parseFloat(rawChange.toFixed(2))
-    };
-};
+const mergeWithRealPrices = (items, priceData) => {
+    const priceMap = new Map();
+    if (priceData?.tickers) {
+        priceData.tickers.forEach(ticker => {
+            priceMap.set(ticker.symbol, {
+                price: ticker.price,
+                change: ticker.changePercent24h,
+                name: ticker.name
+            });
+        });
+    }
 
-const mergeWithMockData = items =>
-    items.map(item => {
+    return items.map(item => {
         const meta = SYMBOL_DIRECTORY.find(entry => entry.symbol === item.symbol) || {
             symbol: item.symbol,
             name: item.symbol,
             type: item.type || 'stock'
         };
-        const quote = createMockQuote(meta.type);
+        
+        const realPrice = priceMap.get(item.symbol);
+        
         return {
             ...meta,
             ...item,
-            price: quote.price,
-            change: quote.change,
+            name: realPrice?.name || meta.name,
+            price: realPrice ? formatPrice(realPrice.price, meta.type) : '---',
+            change: realPrice ? parseFloat(realPrice.change.toFixed(2)) : 0,
             starred: Boolean(item.starred)
         };
     });
+};
 
 const WatchlistSection = () => {
     const [watchlist, setWatchlist] = useState([]);
@@ -68,13 +70,30 @@ const WatchlistSection = () => {
     const [mutationTarget, setMutationTarget] = useState(null);
     const [isPickerOpen, setIsPickerOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchLoading, setSearchLoading] = useState(false);
 
     useEffect(() => {
         const fetchWatchlist = async () => {
             setLoading(true);
             try {
-                const response = await axiosInstance.get(API_PATHS.WATCHLIST.GET);
-                setWatchlist(mergeWithMockData(response.data.items || []));
+                // Fetch watchlist items
+                const watchlistResponse = await axiosInstance.get(API_PATHS.WATCHLIST.GET);
+                const items = watchlistResponse.data.items || [];
+                
+                if (items.length === 0) {
+                    setWatchlist([]);
+                    setLoading(false);
+                    return;
+                }
+
+                // Extract symbols and fetch real prices
+                const symbols = items.map(item => item.symbol).join(',');
+                const priceResponse = await axiosInstance.get(
+                    `${API_PATHS.MARKET.GET_TICKERS}?symbols=${symbols}`
+                );
+                
+                setWatchlist(mergeWithRealPrices(items, priceResponse.data));
                 setError(null);
             } catch (err) {
                 setError(err?.response?.data?.message || 'Không thể tải danh sách theo dõi');
@@ -84,6 +103,10 @@ const WatchlistSection = () => {
         };
 
         fetchWatchlist();
+        
+        // Auto refresh every 60 seconds
+        const interval = setInterval(fetchWatchlist, 60 * 1000);
+        return () => clearInterval(interval);
     }, []);
 
     const existingSymbols = useMemo(
@@ -91,50 +114,97 @@ const WatchlistSection = () => {
         [watchlist]
     );
 
+    // Search API with debounce
+    useEffect(() => {
+        const searchAssets = async () => {
+            const keyword = searchTerm.trim();
+            
+            if (!keyword) {
+                setSearchResults([]);
+                return;
+            }
+
+            setSearchLoading(true);
+            try {
+                const response = await axiosInstance.get(
+                    `${API_PATHS.ASSETS.SEARCH}?q=${encodeURIComponent(keyword)}&limit=6`
+                );
+                
+                // Filter out symbols already in watchlist
+                const filtered = (response.data.results || [])
+                    .filter(item => !existingSymbols.has(item.symbol))
+                    .map(item => ({
+                        symbol: item.symbol,
+                        name: item.name,
+                        type: item.asset_type,
+                        exchange: item.exchange
+                    }));
+                
+                setSearchResults(filtered);
+            } catch (err) {
+                console.error('Error searching assets:', err);
+                setSearchResults([]);
+            } finally {
+                setSearchLoading(false);
+            }
+        };
+
+        // Debounce search - wait 300ms after user stops typing
+        const timeoutId = setTimeout(searchAssets, 300);
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm, existingSymbols]);
+
     const filteredOptions = useMemo(() => {
-        const keyword = searchTerm.trim().toLowerCase();
+        // If searching, use API results
+        if (searchTerm.trim()) {
+            return searchResults;
+        }
+        
+        // If not searching, show some default options from SYMBOL_DIRECTORY
         return SYMBOL_DIRECTORY
             .filter(option => !existingSymbols.has(option.symbol))
-            .filter(option =>
-                !keyword ||
-                option.symbol.toLowerCase().includes(keyword) ||
-                option.name.toLowerCase().includes(keyword)
-            )
             .slice(0, 8);
-    }, [existingSymbols, searchTerm]);
+    }, [searchTerm, searchResults, existingSymbols]);
 
-    const marketSegments = useMemo(() => {
-        const pickRandom = (count, exclusions = []) => {
-            const pool = SYMBOL_DIRECTORY.filter(item => !exclusions.includes(item.symbol));
-            const shuffled = [...pool].sort(() => Math.random() - 0.5);
-            return shuffled.slice(0, count);
-        };
+    const [marketSegments, setMarketSegments] = useState({
+        topGainers: [],
+        topLosers: [],
+        highVolume: []
+    });
 
-        const toRows = (symbols, direction = 0) =>
-            symbols.map(entry => {
-                const quote = createMockQuote(entry.type);
-                const change = direction === 0
-                    ? quote.change
-                    : direction > 0
-                        ? Math.abs(quote.change)
-                        : -Math.abs(quote.change);
-                return {
-                    symbol: entry.symbol,
-                    name: entry.name,
-                    price: quote.price,
-                    change
+    useEffect(() => {
+        const fetchMarketSegments = async () => {
+            try {
+                // Fetch VN Gainers and Losers from API
+                const [gainersResponse, losersResponse] = await Promise.all([
+                    axiosInstance.get(`${API_PATHS.MARKET.VN_GAINERS}?limit=10`),
+                    axiosInstance.get(`${API_PATHS.MARKET.VN_LOSERS}?limit=10`)
+                ]);
+
+                const formatData = (apiData) => {
+                    return (apiData.data || []).map(item => ({
+                        symbol: item.symbol,
+                        name: item.name,
+                        price: formatPrice(item.price, item.asset_type),
+                        change: parseFloat(item.changePercent24h.toFixed(2))
+                    }));
                 };
-            });
 
-        const gainers = toRows(pickRandom(4), 1);
-        const losers = toRows(pickRandom(4, gainers.map(item => item.symbol)), -1);
-        const volume = toRows(pickRandom(4, [...gainers, ...losers].map(item => item.symbol)));
-
-        return {
-            topGainers: gainers,
-            topLosers: losers,
-            highVolume: volume
+                setMarketSegments({
+                    topGainers: formatData(gainersResponse.data),
+                    topLosers: formatData(losersResponse.data),
+                    highVolume: [] // Can be populated later if needed
+                });
+            } catch (err) {
+                console.error('Error fetching market segments:', err);
+            }
         };
+
+        fetchMarketSegments();
+        
+        // Refresh every 60 seconds
+        const interval = setInterval(fetchMarketSegments, 60 * 1000);
+        return () => clearInterval(interval);
     }, []);
 
     const handleToggleFavorite = async symbol => {
@@ -146,7 +216,18 @@ const WatchlistSection = () => {
                 symbol,
                 starred: !target.starred
             });
-            setWatchlist(mergeWithMockData(response.data.items || []));
+            const items = response.data.items || [];
+            
+            // Fetch updated prices
+            if (items.length > 0) {
+                const symbols = items.map(item => item.symbol).join(',');
+                const priceResponse = await axiosInstance.get(
+                    `${API_PATHS.MARKET.GET_TICKERS}?symbols=${symbols}`
+                );
+                setWatchlist(mergeWithRealPrices(items, priceResponse.data));
+            } else {
+                setWatchlist([]);
+            }
             setError(null);
         } catch (err) {
             setError(err?.response?.data?.message || 'Không thể cập nhật trạng thái yêu thích');
@@ -159,7 +240,18 @@ const WatchlistSection = () => {
         setMutationTarget(symbol);
         try {
             const response = await axiosInstance.delete(API_PATHS.WATCHLIST.REMOVE(symbol));
-            setWatchlist(mergeWithMockData(response.data.items || []));
+            const items = response.data.items || [];
+            
+            // Fetch updated prices
+            if (items.length > 0) {
+                const symbols = items.map(item => item.symbol).join(',');
+                const priceResponse = await axiosInstance.get(
+                    `${API_PATHS.MARKET.GET_TICKERS}?symbols=${symbols}`
+                );
+                setWatchlist(mergeWithRealPrices(items, priceResponse.data));
+            } else {
+                setWatchlist([]);
+            }
             setError(null);
         } catch (err) {
             setError(err?.response?.data?.message || 'Không thể xoá mã khỏi danh sách');
@@ -173,9 +265,21 @@ const WatchlistSection = () => {
         try {
             const response = await axiosInstance.post(API_PATHS.WATCHLIST.ADD, {
                 symbol: option.symbol,
-                type: option.type
+                type: option.type,
+                starred: true
             });
-            setWatchlist(mergeWithMockData(response.data.items || []));
+            const items = response.data.items || [];
+            
+            // Fetch updated prices
+            if (items.length > 0) {
+                const symbols = items.map(item => item.symbol).join(',');
+                const priceResponse = await axiosInstance.get(
+                    `${API_PATHS.MARKET.GET_TICKERS}?symbols=${symbols}`
+                );
+                setWatchlist(mergeWithRealPrices(items, priceResponse.data));
+            } else {
+                setWatchlist([]);
+            }
             setError(null);
             setIsPickerOpen(false);
             setSearchTerm('');
@@ -211,26 +315,22 @@ const WatchlistSection = () => {
                             <Star className={`w-4 h-4 ${item.starred ? 'fill-current' : ''}`} />
                         </button>
                     )}
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1" title={item.name}>
                         <div className="font-bold text-gray-900 text-sm">{item.symbol}</div>
-                        <div className="text-xs text-gray-500 truncate">{item.name}</div>
+                        <div className="text-xs text-gray-500 truncate max-w-[150px]">{item.name}</div>
                     </div>
                 </div>
 
-                {/* Price */}
-                <div className="min-w-16 text-center">
-                    <div className="font-semibold text-gray-900">{item.price}</div>
-                </div>
-
-                {/* Change percentage with color animation */}
-                <div className={`min-w-20 text-right font-semibold text-sm transition-all duration-500 ${
-                    isPositive
-                        ? 'text-green-500 group-hover:text-green-600 price-up-animation'
-                        : isNegative
-                            ? 'text-red-500 group-hover:text-red-600 price-down-animation'
-                            : 'text-gray-500'
-                }`}>
-                    <div className="flex items-center justify-end gap-1">
+                {/* Price and Change */}
+                <div className="text-right">
+                    <div className="font-semibold text-gray-900 text-sm">{item.price}</div>
+                    <div className={`text-xs font-semibold transition-all duration-500 flex items-center justify-end gap-1 ${
+                        isPositive
+                            ? 'text-green-500 group-hover:text-green-600'
+                            : isNegative
+                                ? 'text-red-500 group-hover:text-red-600'
+                                : 'text-gray-500'
+                    }`}>
                         {isNegative ? (
                             <TrendingDown className="w-3 h-3" />
                         ) : (
@@ -245,7 +345,7 @@ const WatchlistSection = () => {
                     <button
                         onClick={() => onRemove(item.symbol)}
                         disabled={mutationTarget === item.symbol}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-gray-400 hover:text-red-500 p-1"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-gray-400 hover:text-red-500 p-1 ml-2"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -288,20 +388,32 @@ const WatchlistSection = () => {
                                 />
                             </div>
                             <div className="max-h-64 overflow-y-auto">
-                                {filteredOptions.length === 0 && (
-                                    <div className="p-4 text-sm text-gray-500">
-                                        Không tìm thấy mã phù hợp.
+                                {searchLoading && (
+                                    <div className="p-4 text-sm text-gray-500 text-center">
+                                        Đang tìm kiếm...
                                     </div>
                                 )}
-                                {filteredOptions.map(option => (
+                                {!searchLoading && filteredOptions.length === 0 && (
+                                    <div className="p-4 text-sm text-gray-500">
+                                        {searchTerm.trim() ? 'Không tìm thấy mã phù hợp.' : 'Nhập để tìm kiếm...'}
+                                    </div>
+                                )}
+                                {!searchLoading && filteredOptions.map(option => (
                                     <button
                                         key={option.symbol}
                                         onClick={() => handleAddSymbol(option)}
                                         className="w-full text-left px-4 py-3 hover:bg-violet-50 transition-colors flex flex-col"
                                         disabled={mutationTarget === option.symbol}
                                     >
-                                        <span className="text-sm font-semibold text-gray-900">{option.symbol}</span>
-                                        <span className="text-xs text-gray-500">{option.name}</span>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-semibold text-gray-900">{option.symbol}</span>
+                                            {option.exchange && (
+                                                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
+                                                    {option.exchange}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-xs text-gray-500 truncate">{option.name}</span>
                                     </button>
                                 ))}
                             </div>
@@ -310,10 +422,9 @@ const WatchlistSection = () => {
                 </div>
 
                 {/* Table Header */}
-                <div className="px-4 py-2 bg-gray-50 rounded-t-lg grid grid-cols-12 gap-2 text-xs font-medium text-gray-600">
-                    <div className="col-span-5 pl-8">Mã</div>
-                    <div className="col-span-3 text-center">Giá</div>
-                    <div className="col-span-4 text-right pr-8">Thay đổi</div>
+                <div className="px-4 py-2 bg-gray-50 rounded-t-lg flex justify-between text-xs font-medium text-gray-600">
+                    <div className="pl-8">Mã</div>
+                    <div className="pr-8">Giá / Thay đổi</div>
                 </div>
 
                 {/* Table Content */}
@@ -346,11 +457,14 @@ const WatchlistSection = () => {
                         <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
                             <TrendingUp className="w-3 h-3 text-green-600" />
                         </div>
-                        <h3 className="text-base font-bold text-gray-900">Top Tăng</h3>
+                        <h3 className="text-base font-bold text-gray-900">Top Tăng VN</h3>
                     </div>
                 </div>
 
                 <div className="space-y-1 p-2 max-h-[200px] overflow-y-auto">
+                    {marketSegments.topGainers.length === 0 && (
+                        <div className="p-4 text-sm text-gray-500 text-center">Đang tải...</div>
+                    )}
                     {marketSegments.topGainers.map(item => (
                         <div key={item.symbol} className="animate-slide-in">
                             {renderTableRow(item, false)}
@@ -366,11 +480,14 @@ const WatchlistSection = () => {
                         <div className="w-6 h-6 bg-red-100 rounded-lg flex items-center justify-center">
                             <TrendingDown className="w-3 h-3 text-red-600" />
                         </div>
-                        <h3 className="text-base font-bold text-gray-900">Top Giảm</h3>
+                        <h3 className="text-base font-bold text-gray-900">Top Giảm VN</h3>
                     </div>
                 </div>
 
                 <div className="space-y-1 p-2 max-h-[200px] overflow-y-auto">
+                    {marketSegments.topLosers.length === 0 && (
+                        <div className="p-4 text-sm text-gray-500 text-center">Đang tải...</div>
+                    )}
                     {marketSegments.topLosers.map(item => (
                         <div key={item.symbol} className="animate-slide-in">
                             {renderTableRow(item, false)}
@@ -379,25 +496,27 @@ const WatchlistSection = () => {
                 </div>
             </div>
 
-            {/* High Volume */}
-            <div className="card bg-white border border-gray-200 rounded-xl shadow-sm">
-                <div className="p-4 border-b border-gray-200">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Eye className="w-3 h-3 text-blue-600" />
+            {/* High Volume - Hidden for now since we're focusing on VN stocks */}
+            {marketSegments.highVolume.length > 0 && (
+                <div className="card bg-white border border-gray-200 rounded-xl shadow-sm">
+                    <div className="p-4 border-b border-gray-200">
+                        <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <Eye className="w-3 h-3 text-blue-600" />
+                            </div>
+                            <h3 className="text-base font-bold text-gray-900">Khối lượng cao</h3>
                         </div>
-                        <h3 className="text-base font-bold text-gray-900">Khối lượng cao</h3>
+                    </div>
+
+                    <div className="space-y-1 p-2 max-h-[200px] overflow-y-auto">
+                        {marketSegments.highVolume.map(item => (
+                            <div key={item.symbol} className="animate-slide-in">
+                                {renderTableRow(item, false)}
+                            </div>
+                        ))}
                     </div>
                 </div>
-
-                <div className="space-y-1 p-2 max-h-[200px] overflow-y-auto">
-                    {marketSegments.highVolume.map(item => (
-                        <div key={item.symbol} className="animate-slide-in">
-                            {renderTableRow(item, false)}
-                        </div>
-                    ))}
-                </div>
-            </div>
+            )}
         </div>
     );
 };

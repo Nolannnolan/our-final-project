@@ -471,6 +471,190 @@ exports.getMarketStats = async (req, res) => {
 };
 
 /**
+ * GET /api/v1/market/vn-gainers?limit=10
+ * Get top gainers for Vietnamese stocks (symbols ending with .VN)
+ */
+exports.getVNGainers = async (req, res) => {
+  const limit = parseInt(req.query.limit || '10', 10);
+  
+  if (limit > 100) {
+    return res.status(400).json({ error: 'max limit is 100' });
+  }
+  
+  try {
+    // Try cache first
+    const cacheKey = `vn:gainers:${limit}`;
+    const cached = await redis.get(cacheKey);
+    
+    if (cached) {
+      return res.json({
+        ...JSON.parse(cached),
+        source: 'cache'
+      });
+    }
+    
+    // Get Vietnamese stocks (ending with .VN)
+    const assetsQuery = `
+      SELECT a.id, a.symbol, a.name, a.exchange, a.asset_type
+      FROM assets a
+      WHERE a.status = 'OK'
+      AND a.symbol LIKE '%.VN'
+      ORDER BY a.id
+      LIMIT 200
+    `;
+    
+    const { rows: assets } = await pool.query(assetsQuery);
+    
+    if (assets.length === 0) {
+      return res.json({ type: 'vn-gainers', data: [] });
+    }
+    
+    // Calculate stats for each
+    const results = [];
+    
+    for (const asset of assets) {
+      try {
+        const stats = await calculate24hStats(asset.symbol);
+        
+        if (!stats || !stats.current_price) continue;
+        
+        results.push({
+          symbol: asset.symbol,
+          name: asset.name,
+          exchange: asset.exchange,
+          asset_type: asset.asset_type,
+          price: parseFloat(stats.current_price),
+          change24h: parseFloat(stats.change_24h || 0),
+          changePercent24h: parseFloat(stats.change_percent_24h || 0),
+          high24h: parseFloat(stats.high_24h || 0),
+          low24h: parseFloat(stats.low_24h || 0),
+          volume24h: parseFloat(stats.volume_24h || 0),
+          timestamp: stats.ts
+        });
+      } catch (err) {
+        continue;
+      }
+    }
+    
+    // Sort by highest changePercent24h
+    results.sort((a, b) => b.changePercent24h - a.changePercent24h);
+    
+    // Take top N
+    const topResults = results.slice(0, limit);
+    
+    const response = {
+      type: 'vn-gainers',
+      count: topResults.length,
+      data: topResults
+    };
+    
+    // Cache for 1 minute
+    await redis.setex(cacheKey, 60, JSON.stringify(response));
+    
+    res.json({
+      ...response,
+      source: 'db'
+    });
+    
+  } catch (err) {
+    console.error('getVNGainers error:', err);
+    res.status(500).json({ error: 'failed', message: err.message });
+  }
+};
+
+/**
+ * GET /api/v1/market/vn-losers?limit=10
+ * Get top losers for Vietnamese stocks (symbols ending with .VN)
+ */
+exports.getVNLosers = async (req, res) => {
+  const limit = parseInt(req.query.limit || '10', 10);
+  
+  if (limit > 100) {
+    return res.status(400).json({ error: 'max limit is 100' });
+  }
+  
+  try {
+    // Try cache first
+    const cacheKey = `vn:losers:${limit}`;
+    const cached = await redis.get(cacheKey);
+    
+    if (cached) {
+      return res.json({
+        ...JSON.parse(cached),
+        source: 'cache'
+      });
+    }
+    
+    // Get Vietnamese stocks (ending with .VN)
+    const assetsQuery = `
+      SELECT a.id, a.symbol, a.name, a.exchange, a.asset_type
+      FROM assets a
+      WHERE a.status = 'OK'
+      AND a.symbol LIKE '%.VN'
+      ORDER BY a.id
+      LIMIT 200
+    `;
+    
+    const { rows: assets } = await pool.query(assetsQuery);
+    
+    if (assets.length === 0) {
+      return res.json({ type: 'vn-losers', data: [] });
+    }
+    
+    // Calculate stats for each
+    const results = [];
+    
+    for (const asset of assets) {
+      try {
+        const stats = await calculate24hStats(asset.symbol);
+        
+        if (!stats || !stats.current_price) continue;
+        
+        results.push({
+          symbol: asset.symbol,
+          name: asset.name,
+          exchange: asset.exchange,
+          asset_type: asset.asset_type,
+          price: parseFloat(stats.current_price),
+          change24h: parseFloat(stats.change_24h || 0),
+          changePercent24h: parseFloat(stats.change_percent_24h || 0),
+          high24h: parseFloat(stats.high_24h || 0),
+          low24h: parseFloat(stats.low_24h || 0),
+          volume24h: parseFloat(stats.volume_24h || 0),
+          timestamp: stats.ts
+        });
+      } catch (err) {
+        continue;
+      }
+    }
+    
+    // Sort by lowest changePercent24h
+    results.sort((a, b) => a.changePercent24h - b.changePercent24h);
+    
+    // Take top N
+    const topResults = results.slice(0, limit);
+    
+    const response = {
+      type: 'vn-losers',
+      count: topResults.length,
+      data: topResults
+    };
+    
+    // Cache for 1 minute
+    await redis.setex(cacheKey, 60, JSON.stringify(response));
+    
+    res.json({
+      ...response,
+      source: 'db'
+    });
+    
+  } catch (err) {
+    console.error('getVNLosers error:', err);
+    res.status(500).json({ error: 'failed', message: err.message });
+  }
+};
+
+/**
  * GET /api/v1/market/ticker-detail?symbol=BTCUSDT
  * Get detailed ticker information with historical performance
  */

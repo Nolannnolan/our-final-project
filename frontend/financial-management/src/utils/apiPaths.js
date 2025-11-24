@@ -31,7 +31,15 @@ export const API_PATHS = {
   DETAILS_STOCK: {
     GET_DETAILS_STOCK: "/api/v1/market/ticker-detail",
   },
-    WATCHLIST: {
+  MARKET: {
+    GET_TICKERS: "/api/v1/market/tickers",
+    VN_GAINERS: "/api/v1/market/vn-gainers",
+    VN_LOSERS: "/api/v1/market/vn-losers",
+  },
+  ASSETS: {
+    SEARCH: "/api/v1/assets",
+  },
+  WATCHLIST: {
     GET: "/api/v1/watchlist",
     ADD: "/api/v1/watchlist/add",
     STAR: "/api/v1/watchlist/star",

@@ -2,11 +2,11 @@ const Watchlist = require("../models/Watchlist");
 
 // Default symbols applied to brand-new users
 const DEFAULT_ITEMS = [
-    { symbol: "VNINDEX", type: "index", starred: false },
+    { symbol: "^VNINDEX.VN", type: "index", starred: false },
     { symbol: "AAPL", type: "stock", starred: false },
     { symbol: "MSFT", type: "stock", starred: false },
-    { symbol: "BTC", type: "crypto", starred: false },
-    { symbol: "ETH", type: "crypto", starred: false }
+    { symbol: "BTCUSDT", type: "crypto", starred: false },
+    { symbol: "ETHUSDC", type: "crypto", starred: false }
 ];
 
 // Sort starred items first while keeping older entries behind newer ones
@@ -68,7 +68,7 @@ exports.addToWatchlist = async (req, res) => {
         watchlist.items.push({
             symbol: normalizedSymbol,
             type: normalizedType,
-            starred: false,
+            starred: true,
             addedAt: new Date()
         });
 
