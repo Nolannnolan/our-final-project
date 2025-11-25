@@ -7,7 +7,7 @@ import CustomLineChartStock from '../../components/Charts/CustomLineChartStock';
 import { MessageCircle, X } from 'lucide-react';
 import WatchlistSection from '../../components/News/WatchlistSection';
 import { useState } from 'react';
-import ChatPanel from '../../components/Chatbot/ChatPanel';
+import EnhancedChatPanel from '../../components/EnhancedChatPanel';
 
 const News = () => {
     useUserAuth();
@@ -46,8 +46,8 @@ const News = () => {
             
         </div>
         {isChatOpen && (
-        <div className="fixed bottom-24 right-6 z-40">
-          <ChatPanel onClose={() => setIsChatOpen(false)} />
+        <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-40">
+          <EnhancedChatPanel onClose={() => setIsChatOpen(false)} />
         </div>
       )}
       <button
