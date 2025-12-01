@@ -96,6 +96,7 @@ exports.getLatestPrice = async (req, res) => {
  * - Returns candles in ascending order (oldest → newest)
  * - Smart caching with TTL based on timeframe
  * - Standard parameter names (timeframe, start, end)
+ * - Fixed time window calculation to cover multiple trading days
  * 
  * Supports: 1m, 5m, 15m, 1h, 4h, 1d
  */
@@ -103,8 +104,8 @@ exports.getCandles = async (req, res) => {
   const symbol = (req.query.symbol || '').toUpperCase();
   const timeframe = (req.query.timeframe || '1d').toLowerCase();
   const limit = parseInt(req.query.limit || '500', 10);
-  const start = req.query.start; // ISO timestamp or unix timestamp
-  const end = req.query.end;     // ISO timestamp or unix timestamp
+  const startParam = req.query.start; // ISO timestamp or unix timestamp (keep original for cache check)
+  const endParam = req.query.end;     // ISO timestamp or unix timestamp
 
   if (!symbol) {
     return res.status(400).json({ error: 'symbol required' });
@@ -121,29 +122,31 @@ exports.getCandles = async (req, res) => {
 
   try {
     // Convert unix timestamps to ISO if needed
-    let startISO = start;
-    let endISO = end;
+    let startISO = startParam;
+    let endISO = endParam;
     
-    if (start && !isNaN(start)) {
+    if (startParam && !isNaN(startParam)) {
       // Unix timestamp (seconds or milliseconds)
-      const timestamp = parseInt(start);
+      const timestamp = parseInt(startParam);
       startISO = new Date(timestamp > 9999999999 ? timestamp : timestamp * 1000).toISOString();
     }
     
-    if (end && !isNaN(end)) {
-      const timestamp = parseInt(end);
+    if (endParam && !isNaN(endParam)) {
+      const timestamp = parseInt(endParam);
       endISO = new Date(timestamp > 9999999999 ? timestamp : timestamp * 1000).toISOString();
     }
 
-    // Check cache (only if no time range specified)
-    if (!startISO && !endISO) {
+    // Check cache (only if no time range specified by user)
+    if (!startParam && !endParam) {
       const cached = await getCandlesCache(symbol, timeframe);
       if (cached && Array.isArray(cached) && cached.length > 0) {
+        // Return last N candles from cache
+        const cachedCandles = cached.slice(-limit);
         return res.json({ 
           symbol, 
           timeframe, 
-          count: Math.min(cached.length, limit),
-          candles: cached.slice(0, limit), 
+          count: cachedCandles.length,
+          candles: cachedCandles, 
           source: 'cache' 
         });
       }
@@ -161,12 +164,20 @@ exports.getCandles = async (req, res) => {
     let params = [symbol];
     let paramIndex = 2;
 
-    // CRITICAL FIX: Always use a time range to avoid scanning entire history
-    // If no start time provided, calculate a reasonable default based on limit
+    // FIX: Use fixed time windows based on timeframe to ensure enough data
+    // This covers multiple trading days regardless of limit
     if (!startISO) {
-      // Calculate default start time: limit * 2 * timeframe duration (with buffer)
-      const multiplier = Math.max(limit * 2, 100); // At least 100 periods
-      const defaultStart = new Date(new Date(cutoffTime).getTime() - (tfDuration * multiplier));
+      const windowDays = {
+        '1m': 3,    // 3 days for 1m data (covers ~3 trading sessions)
+        '5m': 7,    // 7 days for 5m data
+        '15m': 14,  // 14 days for 15m data
+        '1h': 30,   // 30 days for 1h data
+        '4h': 60,   // 60 days for 4h data
+        '1d': 365   // 365 days for daily data
+      };
+      
+      const days = windowDays[timeframe] || 7;
+      const defaultStart = new Date(new Date(cutoffTime).getTime() - (days * 24 * 60 * 60 * 1000));
       startISO = defaultStart.toISOString();
     }
 
@@ -174,8 +185,16 @@ exports.getCandles = async (req, res) => {
     params.push(startISO);
     paramIndex++;
 
-    // Filter out incomplete (current) candle
-    const maxTs = new Date(new Date(cutoffTime).getTime() - tfDuration);
+    // Filter out incomplete (current) candle - only when no end time specified
+    let maxTs;
+    if (!endISO) {
+      // Exclude the current incomplete candle
+      maxTs = new Date(new Date(cutoffTime).getTime() - tfDuration);
+    } else {
+      // User specified end time, use it directly
+      maxTs = new Date(endISO);
+    }
+    
     whereClauses.push(`p.ts <= $${paramIndex}`);
     params.push(maxTs.toISOString());
     paramIndex++;
@@ -199,7 +218,12 @@ exports.getCandles = async (req, res) => {
         count: 0,
         candles: [],
         source: 'db',
-        message: 'No data available for this timeframe'
+        message: 'No data available for this timeframe',
+        debug: {
+          startISO,
+          endISO: maxTs.toISOString(),
+          limit
+        }
       });
     }
 
@@ -216,8 +240,8 @@ exports.getCandles = async (req, res) => {
     // Reverse to get oldest → newest (TradingView standard)
     candles.reverse();
 
-    // Cache if no time range specified
-    if (!startISO && !endISO && candles.length > 0) {
+    // Cache if no time range specified by user (use original params)
+    if (!startParam && !endParam && candles.length > 0) {
       const cacheTTL = timeframe === '1m' ? 30 :
                        timeframe === '5m' ? 60 :
                        timeframe === '15m' ? 180 :
