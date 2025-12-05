@@ -8,25 +8,69 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import { addThousandsSeperator } from '../../utils/helper';
 
 const CustomLineChartIncomeExpense = ({expenseData, incomeData}) => {
   const mergeIncomeExpenseData = (incomeData, expenseData) => {
-    const allMonths = [
-      ...new Set([...incomeData.map(i => i.month), ...expenseData.map(e => e.month)]),
-    ];
+    // Tạo map để tổng hợp dữ liệu theo ngày (dùng định dạng gốc để sort)
+    const dataMap = new Map();
 
-    return allMonths.map(month => {
-      const incomeItem = incomeData.find(i => i.month === month);
-      const expenseItem = expenseData.find(e => e.month === month);
-
-      return {
-        month,
-        source: incomeItem ? incomeItem.source : "",
-        category: expenseItem ? expenseItem.category : "",
-        amountIncome: incomeItem ? incomeItem.amount : 0,
-        amountExpense: expenseItem ? expenseItem.amount : 0,
-      };
+    // Cộng dồn thu nhập theo ngày
+    incomeData.forEach(item => {
+      const date = item.month; // "12th Nov" -> chuyển thành "DD/MM"
+      if (dataMap.has(date)) {
+        dataMap.get(date).amountIncome += item.amount || 0;
+      } else {
+        dataMap.set(date, {
+          month: date,
+          amountIncome: item.amount || 0,
+          amountExpense: 0,
+          // Lưu thêm date object để sort
+          dateObj: new Date(item.month),
+        });
+      }
     });
+
+    // Cộng dồn chi tiêu theo ngày
+    expenseData.forEach(item => {
+      const date = item.month; // "12th Nov" -> chuyển thành "DD/MM"
+      if (dataMap.has(date)) {
+        dataMap.get(date).amountExpense += item.amount || 0;
+      } else {
+        dataMap.set(date, {
+          month: date,
+          amountIncome: 0,
+          amountExpense: item.amount || 0,
+          // Lưu thêm date object để sort
+          dateObj: new Date(item.month),
+        });
+      }
+    });
+
+    // Chuyển Map thành array và sort theo ngày
+    // Dùng index để sort vì format "DD/MM" có thể parse được
+    const sortedData = Array.from(dataMap.entries())
+      .map(([key, value], index) => ({
+        ...value,
+        originalIndex: index
+      }))
+      .sort((a, b) => {
+        // Parse ngày từ format "DD/MM" 
+        const parseDate = (dateStr) => {
+          const parts = dateStr.split('/');
+          if (parts.length === 2) {
+            const day = parseInt(parts[0]);
+            const month = parseInt(parts[1]) - 1; // Month is 0-indexed
+            return new Date(2025, month, day); // Dùng năm hiện tại
+          }
+          return new Date();
+        };
+        
+        return parseDate(a.month) - parseDate(b.month);
+      })
+      .map(({ originalIndex, ...rest }) => rest); // Remove originalIndex
+
+    return sortedData;
   };
 
   const mergedData = mergeIncomeExpenseData(incomeData, expenseData);
@@ -39,18 +83,12 @@ const CustomLineChartIncomeExpense = ({expenseData, incomeData}) => {
         <div className="bg-white shadow-md rounded-lg p-2 border border-gray-300">
           <p className="text-xs font-semibold text-blue-700 mb-1">{item.month}</p>
           <p className="text-sm text-gray-700">
-            Nguồn thu: <span className="font-medium">{item.source || "-"}</span>
-          </p>
-          <p className="text-sm text-gray-700">
-            Loại chi: <span className="font-medium">{item.category || "-"}</span>
-          </p>
-          <p className="text-sm text-gray-700">
             Thu nhập:{" "}
-            <span className="text-green-600 font-semibold">${item.amountIncome}</span>
+            <span className="text-green-600 font-semibold">{addThousandsSeperator(item.amountIncome)}</span>
           </p>
           <p className="text-sm text-gray-700">
             Chi tiêu:{" "}
-            <span className="text-red-600 font-semibold">${item.amountExpense}</span>
+            <span className="text-red-600 font-semibold">{addThousandsSeperator(item.amountExpense)}</span>
           </p>
         </div>
       );
@@ -80,7 +118,7 @@ const CustomLineChartIncomeExpense = ({expenseData, incomeData}) => {
 
           <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
           <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#555" }} stroke="none" />
-          <YAxis tick={{ fontSize: 12, fill: "#555" }} stroke="none" />
+          <YAxis tick={{ fontSize: 12, fill: "#555" }} stroke="none" tickFormatter={(value) => addThousandsSeperator(value)} />
           <Tooltip content={<CustomTooltip />} />
 
           {/* Thu nhập */}

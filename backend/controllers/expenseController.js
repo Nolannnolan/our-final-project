@@ -48,6 +48,42 @@ exports.deleteExpense = async (req, res) => {
     }
 }
 
+exports.updateExpense = async (req, res) => {
+    const userId = req.user.id;
+    const expenseId = req.params.id;
+
+    try {
+        const { icon, category, amount, date } = req.body;
+
+        // Validation: check for missing fields
+        if (!category || !amount || !date) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        // Find expense and check ownership
+        const expense = await Expense.findById(expenseId);
+        if (!expense) {
+            return res.status(404).json({ message: "Expense not found" });
+        }
+
+        if (expense.userId.toString() !== userId) {
+            return res.status(403).json({ message: "Not authorized to update this expense" });
+        }
+
+        // Update expense
+        expense.icon = icon;
+        expense.category = category;
+        expense.amount = amount;
+        expense.date = new Date(date);
+
+        await expense.save();
+        res.status(200).json(expense);
+    } catch (error) {
+        console.error("Update expense error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
 exports.downloadExpenseExcel = async (req, res) => {
     const userId = req.user.id;
 

@@ -5,17 +5,22 @@ import { API_PATHS } from '../../utils/apiPaths'
 import axiosInstance from '../../utils/axiosInstance'
 import Modal from '../../components/Modal'
 import AddIncomeForm from '../../components/Income/AddIncomeForm'
+import EditIncomeForm from '../../components/Income/EditIncomeForm'
 import toast from 'react-hot-toast'
 import IncomeList from '../../components/Income/IncomeList'
 import DeleteAlert from '../../components/DeleteAlert'
 import { useUserAuth } from '../../hooks/useUserAuth'
+import SearchCard from '../../components/Cards/SearchCard'
 
 const Income = () => {
 
   useUserAuth();
   const [incomeData, setIncomeData] = useState([])
   const [openAddIncomeModal, setOpenAddIncomeModal] = useState(false)
+  const [openEditIncomeModal, setOpenEditIncomeModal] = useState(false)
+  const [editingIncome, setEditingIncome] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [dateRange, setDateRange] = useState(null)
   const [openDeleteAlert, setOpenDeleteAlert] = useState({
     show: false,
     data: null
@@ -32,6 +37,7 @@ const Income = () => {
       const response = await axiosInstance.get(`${API_PATHS.INCOME.GET_ALL_INCOME}`)
       if (response.data){
         setIncomeData(response.data);
+        setDateRange(null);
       }  
     } catch (error) {
       console.log("Someting went wrong. Please try again later.", error);
@@ -41,23 +47,79 @@ const Income = () => {
 
   }
 
+  const handleReset = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(`${API_PATHS.INCOME.GET_ALL_INCOME}`);
+      if (response.data) {
+        setIncomeData(response.data);
+        setDateRange(null);
+        toast.success("Đã đặt lại dữ liệu");
+      }
+    } catch (error) {
+      console.log("Something went wrong. Please try again later.", error);
+      toast.error("Không thể đặt lại dữ liệu. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async (startDate, endDate) => {
+    // Validation
+    if (!startDate || !endDate) {
+      toast.error("Vui lòng nhập đầy đủ thời gian");
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (start > end) {
+      toast.error("Ngày bắt đầu phải nhỏ hơn ngày kết thúc");
+      return;
+    }
+
+    // Fetch data by time range
+    setLoading(true);
+
+    try{
+      const response = await axiosInstance.get(`${API_PATHS.INCOME.GET_INCOME_BY_TIME}`, {
+        params: {
+          startDate,
+          endDate
+        }
+      });
+      
+      if (response.data){
+        setIncomeData(response.data.transactions);
+        setDateRange({ startDate, endDate });
+        toast.success(`Đã tải dữ liệu từ ${startDate} đến ${endDate}`);
+      }  
+    } catch (error) {
+      console.log("Something went wrong. Please try again later.", error);
+      toast.error("Không thể tải dữ liệu. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   //Handle Add Income
   const handleAddIncome = async(income)=>{
     const {source, amount, date, icon} = income;
 
     // Validation Checks
     if(!source.trim()){
-      toast.error("Source is required.")
+      toast.error("Nguồn thu nhập là bắt buộc")
       return
     }
 
     if(!amount || isNaN(amount) || Number(amount) <=0){
-      toast.error("Amount should be a valid number greater than 0.")
+      toast.error("Số tiền phải là số hợp lệ và lớn hơn 0")
       return
     }
 
     if(!date) {
-      toast.error("Date is required.")
+      toast.error("Ngày là bắt buộc")
       return
     }
 
@@ -70,14 +132,57 @@ const Income = () => {
       });
 
       setOpenAddIncomeModal(false);
-      toast.success("Income added successfully")
+      toast.success("Thêm thu nhập thành công")
       fetchIncomeData();
 
     }catch(error){
       console.error(
-        "Error adding income:",
+        "Lỗi khi thêm thu nhập:",
         error.response?.data?.message || error.message
       )
+      toast.error("Không thể thêm thu nhập. Vui lòng thử lại.")
+    }
+  }
+
+  // Handle Update Income
+  const handleUpdateIncome = async(income) => {
+    const {source, amount, date, icon} = income;
+
+    // Validation Checks
+    if(!source.trim()){
+      toast.error("Nguồn thu nhập là bắt buộc")
+      return
+    }
+
+    if(!amount || isNaN(amount) || Number(amount) <=0){
+      toast.error("Số tiền phải là số hợp lệ và lớn hơn 0")
+      return
+    }
+
+    if(!date) {
+      toast.error("Ngày là bắt buộc")
+      return
+    }
+
+    try{
+      await axiosInstance.put(API_PATHS.INCOME.UPDATE_INCOME(editingIncome._id), {
+        source,
+        amount,
+        date,
+        icon
+      });
+
+      setOpenEditIncomeModal(false);
+      setEditingIncome(null);
+      toast.success("Cập nhật thu nhập thành công")
+      fetchIncomeData();
+
+    }catch(error){
+      console.error(
+        "Lỗi khi cập nhật thu nhập:",
+        error.response?.data?.message || error.message
+      )
+      toast.error("Không thể cập nhật thu nhập. Vui lòng thử lại.")
     }
   }
 
@@ -87,13 +192,14 @@ const Income = () => {
       await axiosInstance.delete(API_PATHS.INCOME.DELETE_INCOME(id))
 
       setOpenDeleteAlert({show: false, data: null})
-      toast.success("Income details delete successfully")
+      toast.success("Xóa thu nhập thành công")
       fetchIncomeData()
     }catch(error){
       console.error(
-        "Error deleting income:",
+        "Lỗi khi xóa thu nhập:",
         error.response?.data?.message || error.message
       )
+      toast.error("Không thể xóa thu nhập. Vui lòng thử lại.")
     }
   }
 
@@ -116,8 +222,8 @@ const Income = () => {
       link.parentNode.removeChild(link)
       window.URL.revokeObjectURL(url)
     } catch(error){
-      console.error("Error downloading income details:", error)
-      toast.error("Failed to download income details. Please try again.")
+      console.error("Lỗi khi tải file thu nhập:", error)
+      toast.error("Không thể tải file. Vui lòng thử lại.")
     }
   }
 
@@ -129,6 +235,7 @@ const Income = () => {
   return (
     <DashBoardLayout activeMenu="Income">
       <div className='my-5 mx-auto'>
+        <SearchCard onSearch={handleSearch} onReset={handleReset}  className = "mb-3"/>
         <div className = "grid grid-cols-1 gap-6">
           <div className=''>
             <IncomeOverview
@@ -140,6 +247,10 @@ const Income = () => {
 
         <IncomeList
           transactions = {incomeData}
+          onEdit={(income) => {
+            setEditingIncome(income);
+            setOpenEditIncomeModal(true);
+          }}
           onDelete={(id)=>{
               setOpenDeleteAlert({show: true, data: id})
             }
@@ -151,18 +262,32 @@ const Income = () => {
         <Modal
           isOpen = {openAddIncomeModal}
           onClose = {() => setOpenAddIncomeModal(false)}
-          title="Add Income"
+          title="Thêm thu nhập"
         >
           <AddIncomeForm onAddIncome={handleAddIncome}/>
         </Modal>
 
         <Modal
+          isOpen = {openEditIncomeModal}
+          onClose = {() => {
+            setOpenEditIncomeModal(false);
+            setEditingIncome(null);
+          }}
+          title="Chỉnh sửa thu nhập"
+        >
+          <EditIncomeForm 
+            incomeData={editingIncome}
+            onUpdateIncome={handleUpdateIncome}
+          />
+        </Modal>
+
+        <Modal
           isOpen = {openDeleteAlert.show}
           onClose = {() => setOpenDeleteAlert({show: false, data: null})}
-          title="Delete Income"
+          title="Xóa thu nhập"
         >
           <DeleteAlert
-            content="Are you sure you want to delete this income detail?"
+            content="Bạn có chắc chắn muốn xóa thu nhập này không?"
             onDelete = {() => deleteIncome(openDeleteAlert.data)}
           />
         </Modal>

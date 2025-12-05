@@ -1,16 +1,18 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import { SIDE_MENU_DATA } from '../../utils/data'
 import { UserContext } from '../../context/UserContext'
 import { useNavigate } from 'react-router-dom'
+import ConfirmLogout from './ConfirmLogout'
 
 
 const SideMenu = ({activeMenu}) => {
     const {user, clearUser} = useContext(UserContext);
     const navigate = useNavigate();
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const handleClick = (route)=>{
         if(route === 'logout'){
-            handleLogout();
+            setShowLogoutModal(true);
             return;
         }
         navigate(route);
@@ -19,6 +21,7 @@ const SideMenu = ({activeMenu}) => {
         localStorage.clear();
         clearUser();
         navigate("/login");
+        setShowLogoutModal(false);
     }
   return (
   <div className='w-64 h-[calc(100vh-61px)] bg-white boder-r border-gray-200/50 p-5 sticky top-[61px] z-20'>
@@ -38,6 +41,12 @@ const SideMenu = ({activeMenu}) => {
         {item.label}
       </button>
     ))}                                           
+    
+    <ConfirmLogout
+      isOpen={showLogoutModal}
+      onClose={() => setShowLogoutModal(false)}
+      onConfirm={handleLogout}
+    />
   </div>
 )
 

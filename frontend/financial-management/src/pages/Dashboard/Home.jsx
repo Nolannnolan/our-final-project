@@ -13,6 +13,8 @@ import Last30DaysExpenses from '../../components/Dashboard/Last30DaysExpenses';
 import RecentIncomeWithChart from '../../components/Dashboard/RecentIncomeWithChart';
 import RecentIncome from '../../components/Dashboard/RecentIncome';
 import IncomeExpenseCorrelation from '../../components/Dashboard/IncomeExpenseCorrelation';
+import SearchCard from '../../components/Cards/SearchCard';
+import toast from 'react-hot-toast';
 
 const Home = () => {
   useUserAuth();
@@ -20,6 +22,7 @@ const Home = () => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [dateRange, setDateRange] = useState(null); // Track selected date range
 
   const fetchDashboardData = async () => {
     if(loading) {
@@ -31,10 +34,68 @@ const Home = () => {
       const response = await axiosInstance.get(`${API_PATHS.DASHBOARD.GET_DATA}`)
       if (response.data){
         setDashboardData(response.data);
+        setDateRange(null); // Reset date range when loading default data
         console.log("Dashboard data", response.data);
       }  
     } catch (error) {
       console.log("Someting went wrong. Please try again later.", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleReset = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(`${API_PATHS.DASHBOARD.GET_DATA}`);
+      if (response.data) {
+        setDashboardData(response.data);
+        setDateRange(null);
+        console.log("Dashboard data reset:", response.data);
+        toast.success("Đã đặt lại dữ liệu về 30 ngày gần nhất");
+      }
+    } catch (error) {
+      console.log("Something went wrong. Please try again later.", error);
+      toast.error("Không thể đặt lại dữ liệu. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async (startDate, endDate) => {
+    // Validation
+    if (!startDate || !endDate) {
+      toast.error("Vui lòng nhập đầy đủ thời gian");
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (start > end) {
+      toast.error("Ngày bắt đầu phải nhỏ hơn ngày kết thúc");
+      return;
+    }
+
+    // Fetch data by time range
+    setLoading(true);
+
+    try{
+      const response = await axiosInstance.get(`${API_PATHS.DASHBOARD.GET_DATA_BY_TIME}`, {
+        params: {
+          startDate,
+          endDate
+        }
+      });
+      
+      if (response.data){
+        setDashboardData(response.data);
+        console.log("Dashboard data by time range:", response.data);
+        toast.success(`Đã tải dữ liệu từ ${startDate} đến ${endDate}`);
+      }  
+    } catch (error) {
+      console.log("Something went wrong. Please try again later.", error);
+      toast.error("Không thể tải dữ liệu. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
@@ -47,32 +108,33 @@ const Home = () => {
   return (
     <DashBoardLayout activeMenu="Dashboard">
       <div className='my-5 mx-auto'>
-        <div className = "grid gird-cols-1 md:grid-cols-3 gap-6">
+        <SearchCard onSearch={handleSearch} onReset={handleReset} />
+        <div className = "grid grid-cols-1 md:grid-cols-3 gap-6">
           <InfoCard
             icon = "fa-regular fa-window-maximize"
-            label = "Total Balance"
+            label = "Tổng số dư"
             value = {addThousandsSeperator(dashboardData?.totalBalance || 0)}
             color = "bg-primary">
           </InfoCard> 
 
           <InfoCard
             icon = "fa-solid fa-wallet"
-            label = "Total Income"
+            label = "Tổng thu nhập"
             value = {addThousandsSeperator(dashboardData?.totalIncome|| 0)}
             color = "bg-orange-500">
           </InfoCard> 
 
           <InfoCard
             icon = "fa-solid fa-hand-holding-dollar"
-            label = "Total Expense"
+            label = "Tổng chi tiêu"
             value = {addThousandsSeperator(dashboardData?.totalExpenses || 0)}
             color = "bg-red-500">
           </InfoCard> 
         </div>
 
         <IncomeExpenseCorrelation
-          dataIncome = {dashboardData?.last30DaysIncome?.transactions||[]}
-          dataExpense = {dashboardData?.last30DaysExpenses?.transactions || []}
+          dataIncome = {dashboardData?.rangeIncome?.transactions || dashboardData?.last30DaysIncome?.transactions||[]}
+          dataExpense = {dashboardData?.rangeExpenses?.transactions || dashboardData?.last30DaysExpenses?.transactions || []}
         />
 
         <div className = "grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -88,21 +150,21 @@ const Home = () => {
           />
 
           <ExpenseTransactions
-            transactions={dashboardData?.last30DaysExpenses?.transactions||[]}
+            transactions={dashboardData?.rangeExpenses?.transactions || dashboardData?.last30DaysExpenses?.transactions||[]}
             onSeeMore={()=>{navigate("/expense")}}
           />
 
           <Last30DaysExpenses
-            data = {dashboardData?.last30DaysExpenses?.transactions || []}
+            data = {dashboardData?.rangeExpenses?.transactions || dashboardData?.last30DaysExpenses?.transactions || []}
           />
 
           <RecentIncomeWithChart
-            data={dashboardData?.last30DaysIncome?.transactions||[]}
-            totalIncome = {dashboardData?.last30DaysIncome?.total || 0}
+            data={dashboardData?.rangeIncome?.transactions || dashboardData?.last30DaysIncome?.transactions||[]}
+            totalIncome = {dashboardData?.rangeIncome?.total || dashboardData?.last30DaysIncome?.total || 0}
           />
 
           <RecentIncome
-            transactions={dashboardData?.last30DaysIncome?.transactions||[]}
+            transactions={dashboardData?.rangeIncome?.transactions || dashboardData?.last30DaysIncome?.transactions||[]}
             onSeeMore={()=>{navigate("/income")}} 
           />
         </div>

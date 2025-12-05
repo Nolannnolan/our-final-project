@@ -21,7 +21,7 @@ const News = () => {
     <DashBoardLayout activeMenu="News">
         <div className='my-5 mx-auto '>
             <div>
-                <h2 className='text-2xl font-semibold mb-4'>News Page</h2>
+                <h2 className='text-2xl font-semibold mb-4'>Trang Tin Tức</h2>
             </div>
             
 

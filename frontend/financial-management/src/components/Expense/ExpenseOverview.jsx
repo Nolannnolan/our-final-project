@@ -16,15 +16,12 @@ const ExpenseOverview = ({transactions, onAddExpense}) => {
       <div className = "card">
           <div className='flex items-center justify-between'>
               <div className=''>
-                  <h5 className='text-lg'>Expense Overview</h5>
-                  <p className='text-xs text-gray-400 mt-0.5'>
-                      Track your spending over time and gain insights into where your money goes.
-                  </p>
+                  <h5 className='text-lg'>Tổng quan thu nhập bằng biểu đồ cột</h5>
               </div>
 
               <button className='add-btn' onClick={onAddExpense}>
                   <i className="fa-solid fa-plus text-lg"></i> 
-                  Add Expense
+                  Thêm chi tiêu
               </button>
           </div>
 
@@ -36,10 +33,7 @@ const ExpenseOverview = ({transactions, onAddExpense}) => {
       <div className = "card my-2">
           <div className='flex items-center justify-between'>
               <div className=''>
-                  <h5 className='text-lg'>Expense Overview</h5>
-                  <p className='text-xs text-gray-400 mt-0.5'>
-                      Track your spending over time and gain insights into where your money goes.
-                  </p>
+                  <h5 className='text-lg'>Tổng quan chi tiêu bằng biểu đồ đường</h5>
               </div>
           </div>
 

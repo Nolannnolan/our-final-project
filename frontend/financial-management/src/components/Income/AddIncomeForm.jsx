@@ -3,10 +3,12 @@ import Input from '../Inputs/Input'
 import EmojiPickerPopup from '../EmojiPickerPopup'
 
 const AddIncomeForm = ({onAddIncome}) => {
+    const today = new Date().toISOString().split('T')[0]; // Lấy ngày hôm nay theo định dạng YYYY-MM-DD
+    
     const [income, setIncome] = useState({
         source: "",
         amount: "",
-        date: "",
+        date: today,
         icon: "",
     })
 

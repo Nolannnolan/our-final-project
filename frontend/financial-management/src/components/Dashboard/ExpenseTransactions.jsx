@@ -6,8 +6,8 @@ const ExpenseTransactions = ({transactions, onSeeMore}) => {
   return (
     <div className = "card">
       <div className = "flex items-center justify-between">
-        <h5 className = "text-lg">Expenses in 30days</h5>
-        <button className = "card-btn" onClick = {onSeeMore}>See All <i className="fa-solid fa-arrow-right "></i></button>
+        <h5 className = "text-lg">Chi tiêu trong 30 ngày</h5>
+        <button className = "card-btn" onClick = {onSeeMore}>Xem tất cả <i className="fa-solid fa-arrow-right "></i></button>
       </div>
 
       <div className = "mt-6">
@@ -16,7 +16,7 @@ const ExpenseTransactions = ({transactions, onSeeMore}) => {
                 key = {item._id}
                 title = {item.category}
                 icon={item.icon}
-                date={moment(item.date).format("Do MMM YYYY")}
+                date={moment(item.date).format("DD/MM/YYYY")}
                 amount={item.amount}
                 type={item.type}
                 hideDeleteBtn
