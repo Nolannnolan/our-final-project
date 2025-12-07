@@ -1,6 +1,7 @@
 const axios = require('axios');
 
-const AI_AGENT_BASE_URL = process.env.AI_AGENT_URL || 'http://localhost:8000';
+// AI Agent (FastAPI) runs on port 8008, not 8000
+const AI_AGENT_BASE_URL = process.env.AI_AGENT_URL || 'http://localhost:8008';
 
 class AIAgentService {
     constructor() {
