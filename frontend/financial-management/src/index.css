@@ -49,6 +49,7 @@
 /* Custom scrollbar style */
 .scroll-thin::-webkit-scrollbar {
   height: 6px;
+  width: 6px;
   @apply rounded-full;
 }
 
@@ -58,4 +59,20 @@
 
 .scroll-thin::-webkit-scrollbar-thumb {
   @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors duration-200;
+}
+
+
+@keyframes slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out forwards;
 }

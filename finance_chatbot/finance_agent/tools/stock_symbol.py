@@ -149,7 +149,7 @@ def get_stock_symbol(company_name: str, country: Optional[str] = None) -> Dict[s
     # --- Step 3: LLM fallback ---
     if HAS_GEMINI:
         try:
-            gw = GeminiWrapper(model="gemini-2.0-flash")
+            gw = GeminiWrapper(model="google/gemini-2.5-flash")
             prompt = (
                 f"What is the stock ticker symbol for '{company}'"
                 + (f" ({country})" if country else "")

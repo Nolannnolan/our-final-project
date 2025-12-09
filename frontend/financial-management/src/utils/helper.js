@@ -25,18 +25,24 @@ export const validatePassword = (password) => {
 }
 
 export const addThousandsSeperator = (num) => {
-  if (num == "" || isNaN(num)) {
-    return '';
+  if (num === "" || isNaN(num)) return '';
+
+  const n = Number(num);
+  const isInteger = Number.isInteger(n);
+
+  if (isInteger) {
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }
-  const [integerPart, fractionalPart] = num.toString().split('.');
-  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return fractionalPart ? `${formattedInteger}.${fractionalPart}` : formattedInteger;
-}
+
+  const [integerPart, fractionalPart] = n.toFixed(2).split('.');
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${formattedInteger},${fractionalPart}`;
+};
 
 export const prepareExpenseBarChartData = (data = []) =>{
   const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date))
   const chartData = sortedData.map((item) => ({
-    month: moment(item?.date).format('Do MMM'),
+    month: moment(item?.date).format('DD/MM'),
     category: item?.category,
     amount: item?.amount,
   }))
@@ -47,7 +53,7 @@ export const prepareIncomeChartData = (data = [])=>{
   const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date))
 
   const chartData = sortedData.map((item) => ({
-    month: moment(item?.date).format('Do MMM'),
+    month: moment(item?.date).format('DD/MM'),
     amount: item?.amount,
     source: item?.source,
   }))
@@ -59,7 +65,7 @@ export const prepareExpenseLineChartData  = (data = [])=>{
   const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date))
 
   const chartData = sortedData.map((item) => ({
-    month: moment(item?.date).format('Do MMM'),
+    month: moment(item?.date).format('DD/MM'),
     amount: item?.amount,
     category: item?.category,
   }))

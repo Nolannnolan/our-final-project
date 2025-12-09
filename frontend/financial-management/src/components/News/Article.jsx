@@ -27,26 +27,26 @@ const Article = () => {
 
   
   return (
-    <div className='card'>
+    <div className='g-white py-6 pl-6 pr-2 rounded-2xl shadow-md shadow-gray-100 border border-gray-200/50 '>
       <div className='flex items-center justify-between'>
-            <div className=''>
-                <h5 className='text-lg m-4'>Tin tức mới</h5>
+        <div className='w-full'>
+          <h5 className='text-lg mb-2 font-medium'>Tin tức mới</h5>
 
-                <div className="space-y-4">
-                  {news.map((item, index) => (
-                    <NewsCard 
-                        key={index}
-                        title = {item.title}
-                        source = {item.source}
-                        pubDate = {formatTimeAgo(item.pubDate)}
-                        image = {item.image}
-                        link= {item.link}
-                        logo = {item.logo}
-                    />
-                  ))}
-                </div>
-            </div>
+          <div className="2xl:max-h-[calc(5*280px)] overflow-y-auto scroll-thin pr-2 md:grid md:grid-cols-2 2xl:grid-cols-1 md:gap-4 2xl:gap-0 ">
+            {news.map((item, index) => (
+              <NewsCard 
+                key={index}
+                title = {item.title}
+                source = {item.source}
+                pubDate = {formatTimeAgo(item.pubDate)}
+                image = {item.image}
+                link= {item.link}
+                logo = {item.logo}
+              />
+            ))}
+          </div>
         </div>
+      </div>
     </div>
   )
 }

@@ -28,9 +28,14 @@ const sources = [
 let cachedNews = [];
 let lastUpdated = null;
 
-// Hàm lấy image từ description
+// Hàm lấy image từ description hoặc enclosure
 const extractImage = (item) => {
-  // Ưu tiên lấy từ description
+  // Ưu tiên 1: Lấy từ enclosure (VTC News)
+  if (item.enclosure && item.enclosure.url) {
+    return item.enclosure.url;
+  }
+
+  // Ưu tiên 2: Lấy từ description hoặc content
   let html = item.description || item.content || "";
 
   // Nếu description không có <img> thì thử lấy từ content:encoded

@@ -94,9 +94,9 @@ async def chat(request: ChatRequest):
         if request.model:
             model_name = request.model
             # Map frontend model names to backend model names
-            if model_name == "gemini-2.5-flash":
-                model_name = "gemini-2.0-flash"  # Map to actual model name
-            elif model_name == "gemini-2.5-pro":
+            if model_name == "google/gemini-2.5-flash":
+                model_name = "google/gemini-2.0-flash-001"  # Map to actual model name
+            elif model_name == "google/gemini-2.5-pro":
                 model_name = "gemini-1.5-pro"  # Map to actual model name
                 
             # Update the model in the existing agent's gemini wrapper
@@ -106,7 +106,7 @@ async def chat(request: ChatRequest):
                 api_key = os.getenv("GEMINI_API_KEY")
                 agent.gemini.client = OpenAI(
                     api_key=api_key,
-                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+                    base_url="https://openrouter.ai/api/v1"
                 )
                 session["current_model"] = request.model
         
@@ -142,10 +142,10 @@ async def event_generator(session_id: str, message: str, model: Optional[str] = 
         # Update model if provided
         if model:
             model_name = model
-            if model_name == "gemini-2.5-flash":
-                model_name = "gemini-2.0-flash"  # Map to actual Gemini model name
-            elif model_name == "gemini-2.5-pro":
-                model_name = "gemini-1.5-pro"  # Map to actual Gemini model name
+            if model_name == "google/google/gemini-2.5-flash":
+                model_name = "google/google/gemini-2.0-flash-001"  # Map to actual Gemini model name
+            elif model_name == "google/google/gemini-2.5-pro":
+                model_name = "google/gemini-2.0-pro"  # Map to actual Gemini model name
                 
             if hasattr(agent.gemini, 'model') and agent.gemini.model != model_name:
                 agent.gemini.model = model_name
@@ -153,7 +153,7 @@ async def event_generator(session_id: str, message: str, model: Optional[str] = 
                 api_key = os.getenv("GEMINI_API_KEY")
                 agent.gemini.client = OpenAI(
                     api_key=api_key,
-                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+                    base_url="https://openrouter.ai/api/v1"
                 )
                 session["current_model"] = model
         
@@ -337,4 +337,4 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8008)

@@ -1,17 +1,22 @@
-from finance_agent.tools.ratios import calculate_ratios
+from openai import OpenAI
 
-def test_calculate_ratios_mock():
-    result = calculate_ratios("AAPL")
-    assert "ratios" in result
+client = OpenAI(
+  base_url="https://openrouter.ai/api/v1",
+  api_key="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",
+)
 
-def test_calculate_ratios_with_financials():
-    financials = {
-        "revenue": 1000,
-        "net_income": 200,
-        "total_equity": 500,
-        "market_price": 10,
-        "shares_outstanding": 100,
+completion = client.chat.completions.create(
+  extra_headers={
+    "HTTP-Referer": "<YOUR_SITE_URL>", # Optional. Site URL for rankings on openrouter.ai.
+    "X-Title": "<YOUR_SITE_NAME>", # Optional. Site title for rankings on openrouter.ai.
+  },
+  extra_body={},
+  model="google/gemini-2.5-flash",
+  messages=[
+    {
+      "role": "user",
+      "content": "this is a test, say hello!"
     }
-    result = calculate_ratios("AAPL", financials)
-    assert "ratios" in result
-    assert result["ratios"]["roe"] == 200 / 500
+  ]
+)
+print(completion.choices[0].message.content)

@@ -13,7 +13,7 @@ const DeleteAlert = ({content, onDelete}) => {
           className='add-btn add-btn-fill'
           onClick={onDelete}    
         >
-          Delete
+          Xóa
         </button>
       </div>
     </div>

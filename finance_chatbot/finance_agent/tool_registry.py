@@ -129,6 +129,9 @@ from .tools.pattern_recognition import get_pattern_recognition
 from .tools.candlestick_analysis import get_candlestick_analysis
 from .tools.signal_summary import get_signal_summary
 
+# New tools - Phase 8: Pattern Match Predictor
+from .tools.pattern_match_predictor import get_pattern_match_predictor
+
 # ========== Register Existing Tools ==========
 
 # Old chart tool - disabled in favor of generate_stock_price_chart
@@ -313,4 +316,12 @@ registry.register(
     name="get_signal_summary",
     description="Aggregate technical signals from multiple indicators (Moving Averages, RSI, MACD, Bollinger Bands, Stochastic, Volume) into overall BUY/SELL/NEUTRAL recommendation with confidence level. Provides detailed breakdown of each indicator. Use this for comprehensive technical analysis summary.",
     func=get_signal_summary,
+)
+
+# ========== Register New Tools - Phase 8: Pattern Match Predictor ==========
+
+registry.register(
+    name="get_pattern_match_predictor",
+    description="Finds historical price patterns across multiple assets (stocks, crypto, forex, etc.) and calculates the probabilistic outcome (up/down and average return) for the next 5 days based on pattern similarity. Uses FAISS vector search to find similar 30-day patterns from millions of historical patterns. Returns win rate, average return, and BULLISH/BEARISH/NEUTRAL prediction with confidence level. Use this for pattern-based price prediction and technical analysis.",
+    func=get_pattern_match_predictor,
 )

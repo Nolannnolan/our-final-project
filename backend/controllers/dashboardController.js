@@ -20,63 +20,39 @@ exports.getDashboardData = async (req, res) => {
             { $group: { _id: null, total: { $sum: "$amount"} } },
         ])
 
-        // get income transactions in the last 60 days
-        const last60DaysIncomeTransactions = await Income.find({
-            userId,
-            date: { $gte: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) },
-        }).sort( {date: -1} );
-
-        // get total income last 60 days
-        const incomeLast60Days = last60DaysIncomeTransactions.reduce(
-            (sum, transaction) => sum + transaction.amount,
-            0
-        );
-
-        // get income transactions in the last 60 days
+        // get income transactions in the last 30 days
         const last30DaysIncomeTransactions = await Income.find({
             userId,
-            date: { $gte: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) },
+            date: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
         }).sort( {date: -1} );
 
-        // get total income last 60 days
-        const incomeLast30Days = last60DaysIncomeTransactions.reduce(
+        // get total income last 30 days
+        const incomeLast30Days = last30DaysIncomeTransactions.reduce(
             (sum, transaction) => sum + transaction.amount,
             0
         );
 
-            // get Expenses transactions in the last 60 days
-        const last60DaysExpensesTransactions = await Expense.find({
-            userId,
-            date: { $gte: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) },
-        }).sort( {date: -1} );
-
-        // get total Expenses last 60 days
-        const expensesLast60Days = last60DaysExpensesTransactions.reduce(
-            (sum, transaction) => sum + transaction.amount,
-            0
-        );
-
-        // get Expenses transactions in the last 60 days
+        // get Expenses transactions in the last 30 days
         const last30DaysExpensesTransactions = await Expense.find({
             userId,
-            date: { $gte: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) },
+            date: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
         }).sort( {date: -1} );
 
-        // get total Expenses last 60 days
-        const expensesLast30Days = last60DaysExpensesTransactions.reduce(
+        // get total Expenses last 30 days
+        const expensesLast30Days = last30DaysExpensesTransactions.reduce(
             (sum, transaction) => sum + transaction.amount,
             0
         );
 
-        // fetch 5 last transactions (income + expenses)
+        // fetch 10 last transactions (income + expenses)
         const lastTransactions = [
-            ...(await Income.find ({ userId }).sort( {date: -1}).limit(5)).map(
+            ...(await Income.find ({ userId }).sort( {date: -1}).limit(10)).map(
                 (txn) => ({
                     ...txn.toObject(),
                     type: "income"
                 })
             ),
-            ...(await Expense.find ({ userId }).sort( {date: -1}).limit(5)).map(
+            ...(await Expense.find ({ userId }).sort( {date: -1}).limit(10)).map(
                 (txn) => ({
                     ...txn.toObject(),
                     type: "expense"
@@ -94,17 +70,9 @@ exports.getDashboardData = async (req, res) => {
                 total: expensesLast30Days,
                 transactions: last30DaysExpensesTransactions,
             },
-            last60DaysExpenses: {
-                total: expensesLast60Days,
-                transactions: last60DaysExpensesTransactions,
-            },
             last30DaysIncome: {
                 total: incomeLast30Days,
                 transactions: last30DaysIncomeTransactions,
-            },
-            last60DaysIncome: {
-                total: incomeLast60Days,
-                transactions: last60DaysIncomeTransactions,
             },
             recentTransactions: lastTransactions,
         });

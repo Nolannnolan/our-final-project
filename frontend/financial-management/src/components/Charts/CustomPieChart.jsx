@@ -9,6 +9,7 @@ import {
 } from "recharts"
 import CustomTooltip from './CustomTooltip'
 import CustomLegend from './CustomLegend'
+import { addThousandsSeperator } from '../../utils/helper'
 
 const CustomPieChart = ({data, label, totalAmount, colors, showTextAnchor}) => {
   return (
@@ -54,7 +55,7 @@ const CustomPieChart = ({data, label, totalAmount, colors, showTextAnchor}) => {
                         fontSize="24px"
                         fontWeight="500"
                     >
-                        {totalAmount}
+                        {addThousandsSeperator(totalAmount)}
                     </text>
                 </>
             )}

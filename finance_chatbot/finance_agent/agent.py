@@ -207,7 +207,7 @@ def _map_aliases_to_signature(args: Dict[str, Any], func: Callable) -> Dict[str,
 
 
 class FinancialAgent:
-    def __init__(self, model: str = "gemini-2.5-flash", verbose: bool = True, lazy_load: bool = True):
+    def __init__(self, model: str = "google/gemini-2.5-flash", verbose: bool = True, lazy_load: bool = True):
         configure_logging(verbose)
         self.gemini = GeminiWrapper(model=model, enable_history=False)  # We manage history at agent level
         self.registry = registry

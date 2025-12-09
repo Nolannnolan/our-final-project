@@ -207,7 +207,7 @@ class GeminiWrapper:
             try:
                 # Khởi tạo OpenAI client với Gemini endpoint
                 self.client = OpenAI(
-                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                    base_url="https://openrouter.ai/api/v1",
                     api_key=os.getenv(GEMINI_API_KEY_ENV)
                 )
                 self.model = model

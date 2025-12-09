@@ -2,17 +2,17 @@ import React from 'react'
 import TransactionInfoCard from '../Cards/TransactionInfoCard'
 import moment from 'moment'
 
-const IncomeList = ({transactions, onDelete, onDownload}) => {
+const IncomeList = ({transactions, onEdit, onDelete, onDownload}) => {
   return (
     <div className = "card">
         <div className='flex items-center justify-between'>
             <div className=''>
-                <h5 className='text-lg'>Income Source</h5>
+                <h5 className='text-lg'>Nguồn thu nhập</h5>
             </div>
 
             <button className='card-btn' onClick={onDownload}>
-                <i className="fa-solid fa-download text-base"></i>
-                Download
+                <i className="fa-solid fa-download text-lg"></i>
+                Tải xuống
             </button>
         </div>
 
@@ -22,9 +22,10 @@ const IncomeList = ({transactions, onDelete, onDownload}) => {
                     key={income._id}
                     title = {income.source}
                     icon = {income.icon}
-                    date = {moment(income.date).format("Do MMM YYYY")}
+                    date = {moment(income.date).format("DD/MM/YYYY")}
                     amount={income.amount}
                     type="income"
+                    onEdit={() => onEdit(income)}
                     onDelete={()=>onDelete(income._id)}
                 />
             ))}

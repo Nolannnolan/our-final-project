@@ -51,6 +51,43 @@ exports.deleteIncome = async (req, res) => {
     }
 };
 
+// update income
+exports.updateIncome = async (req, res) => {
+    const userId = req.user.id;
+    const incomeId = req.params.id;
+
+    try {
+        const { icon, source, amount, date } = req.body;
+
+        // Validation: check for missing fields
+        if (!source || !amount || !date) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        // Find income and check ownership
+        const income = await Income.findById(incomeId);
+        if (!income) {
+            return res.status(404).json({ message: "Income not found" });
+        }
+
+        if (income.userId.toString() !== userId) {
+            return res.status(403).json({ message: "Not authorized to update this income" });
+        }
+
+        // Update income
+        income.icon = icon;
+        income.source = source;
+        income.amount = amount;
+        income.date = new Date(date);
+
+        await income.save();
+        res.status(200).json(income);
+    } catch (error) {
+        console.error("Update income error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
 // download income excel
 exports.downloadIncomeExcel = async (req, res) => {
     const userId = req.user.id;

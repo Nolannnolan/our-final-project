@@ -103,9 +103,10 @@ dist-ssr/
 build/
 *.local
 
-
+/ai/
 /test/
 *.lock
+*.index
 *.toml
 test_results.json
 /finance_chatbot/finance_agent/tools/intent_tools.py

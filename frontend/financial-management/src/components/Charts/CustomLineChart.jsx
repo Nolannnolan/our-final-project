@@ -1,5 +1,6 @@
 import React from 'react'
 import { XAxis, YAxis, ResponsiveContainer, CartesianGrid, Area, AreaChart, Tooltip } from "recharts";
+import { addThousandsSeperator } from '../../utils/helper';
 
 const CustomLineChart = ({data, dataKey}) => {
 
@@ -10,7 +11,7 @@ const CustomLineChart = ({data, dataKey}) => {
                 <div className = "bg-white shadow-md rounded-lg p-2 border border-gray-300">
                     <p className='text-xs font-semibold text-purple-800 mb-1'>{item[dataKey]}</p>
                     <p className = "text-sm text-gray-600">
-                        Amount: <span className='text-sm font-medium text-gray-900'>${item.amount}</span>
+                        Số tiền: <span className='text-sm font-medium text-gray-900'>{addThousandsSeperator(item.amount)}</span>
                     </p>
                 </div>
             )
@@ -31,7 +32,7 @@ const CustomLineChart = ({data, dataKey}) => {
 
             <CartesianGrid stroke = "none"/>
             <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#555"}} stroke='none' />
-            <YAxis tick={{ fontSize: 12, fill: "#555"}} stroke='none' />
+            <YAxis tick={{ fontSize: 12, fill: "#555"}} stroke='none' tickFormatter={(value) => addThousandsSeperator(value)} />
 
             <Tooltip content={<CustomTooltip/>} />
             
