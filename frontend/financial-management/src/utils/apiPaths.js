@@ -41,6 +41,7 @@ export const API_PATHS = {
     GET_TICKERS: "/api/v1/market/tickers",
     VN_GAINERS: "/api/v1/market/vn-gainers",
     VN_LOSERS: "/api/v1/market/vn-losers",
+    SUMMARY: "/api/v1/market/summary",
   },
   PRICE: {
     GET_CANDLES: "/api/v1/price/candles",

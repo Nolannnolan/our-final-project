@@ -1,4 +1,5 @@
 import React from 'react'
+import { addThousandsSeperator } from '../../utils/helper'
 
 const TitleStock = ({ data }) => {
   return (
@@ -30,7 +31,7 @@ const TitleStock = ({ data }) => {
                 data.changeNow < 0 ? "text-red-600" : "text-green-600"
               }`}
             >
-              {data.changeNow} ({data.percentChangeNow}%)
+              {addThousandsSeperator(data.changeNow)} ({addThousandsSeperator(data.percentChangeNow)}%)
             </p>
           </div>
 
@@ -45,7 +46,7 @@ const TitleStock = ({ data }) => {
                   data.changeByTime < 0 ? "text-red-600" : "text-green-600"
                 }`}
               >
-                {data.changeByTime} ({data.percentChangeByTime}%)
+                {addThousandsSeperator(data.changeByTime)} ({addThousandsSeperator(data.percentChangeByTime)}%)
               </p>
             </div>
           )}

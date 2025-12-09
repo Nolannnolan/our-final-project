@@ -428,7 +428,7 @@ const WatchlistSection = () => {
                 </div>
 
                 {/* Table Content */}
-                <div className="space-y-1 p-2 max-h-[280px] overflow-y-auto">
+                <div className="space-y-1 p-2 max-h-[580px] overflow-y-auto scroll-thin">
                     {loading && (
                         <div className="p-4 text-sm text-gray-500">Đang tải danh sách...</div>
                     )}
@@ -461,7 +461,7 @@ const WatchlistSection = () => {
                     </div>
                 </div>
 
-                <div className="space-y-1 p-2 max-h-[200px] overflow-y-auto">
+                <div className="space-y-1 p-2 max-h-[200px] overflow-y-auto scroll-thin">
                     {marketSegments.topGainers.length === 0 && (
                         <div className="p-4 text-sm text-gray-500 text-center">Đang tải...</div>
                     )}
@@ -484,7 +484,7 @@ const WatchlistSection = () => {
                     </div>
                 </div>
 
-                <div className="space-y-1 p-2 max-h-[200px] overflow-y-auto">
+                <div className="space-y-1 p-2 max-h-[200px] overflow-y-auto scroll-thin">
                     {marketSegments.topLosers.length === 0 && (
                         <div className="p-4 text-sm text-gray-500 text-center">Đang tải...</div>
                     )}

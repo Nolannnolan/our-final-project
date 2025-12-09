@@ -10,21 +10,18 @@ import moment from "moment";
 const CustomLineChartStock = ({symbol}) => {
   const [selectedRange, setSelectedRange] = useState('1D');
   const [chartData, setChartData] = useState([]);
+  const [summaryData, setSummaryData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const data = {
-    name: "VnIndex",
-    symbol: "^VNI",
-    priceNow: "1.640,58",
-    changeNow: -14.31,
-    percentChangeNow: -0.86,
-    changeByTime: -33.39,
-    percentChangeByTime: -1.99,
-    time: "5D",
-    timeRange: "5 NGÀY QUA",
-    isMarketOpen: false,
-    lastUpdate: "12:16 6 Thg 11 UTC+07:00",
-    currency: "VND",
+  // Time range mapping
+  const TIME_RANGE_LABELS = {
+    '1D': '1 NGÀY QUA',
+    '5D': '5 NGÀY QUA',
+    '1M': '1 THÁNG QUA',
+    '3M': '3 THÁNG QUA',
+    'YTD': 'ĐẦU NĂM ĐẾN NAY',
+    '1Y': '1 NĂM QUA',
+    '5Y': '5 NĂM QUA'
   };
 
   // Calculate start time based on selected range
@@ -74,6 +71,20 @@ const CustomLineChartStock = ({symbol}) => {
     };
   };
 
+  // Fetch summary data from API
+  const fetchSummaryData = async () => {
+    if (!symbol) return;
+    
+    try {
+      const response = await axiosInstance.get(`${API_PATHS.MARKET.SUMMARY}?symbol=${symbol}`);
+      setSummaryData(response.data);
+      console.log("Summary data loaded:", response.data);
+    } catch (error) {
+      console.error("Error fetching summary data:", error);
+      setSummaryData(null);
+    }
+  };
+
   // Fetch chart data from API
   const fetchChartData = async () => {
     if (!symbol) return;
@@ -102,7 +113,26 @@ const CustomLineChartStock = ({symbol}) => {
       }));
 
       setChartData(formattedData);
+
+      // Calculate changeByTime and percentChangeByTime from candles
+      if (summaryData && candles.length > 0) {
+        const firstPrice = candles[0].close;
+        const lastPrice = candles[candles.length - 1].close;
+        const changeByTime = lastPrice - firstPrice;
+        const percentChangeByTime = (changeByTime / firstPrice) * 100;
+
+        // Update summary data with calculated values
+        setSummaryData({
+          ...summaryData,
+          changeByTime: changeByTime,
+          percentChangeByTime: percentChangeByTime,
+          time: selectedRange,
+          timeRange: TIME_RANGE_LABELS[selectedRange]
+        });
+      }
+
       console.log("Chart data loaded:", formattedData);
+
     } catch (error) {
       console.error("Error fetching chart data:", error);
       setChartData([]);
@@ -111,8 +141,29 @@ const CustomLineChartStock = ({symbol}) => {
     }
   };
 
+  // Fetch summary data only when symbol changes
+  useEffect(() => {
+    fetchSummaryData();
+    
+    // Auto refresh summary every 5 minutes
+    const intervalId = setInterval(() => {
+      fetchSummaryData();
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    return () => clearInterval(intervalId);
+  }, [symbol]);
+
+  // Fetch chart data when symbol or range changes
   useEffect(() => {
     fetchChartData();
+    
+    // Auto refresh every 2 minutes
+    const intervalId = setInterval(() => {
+      fetchChartData();
+    }, 2 * 60 * 1000); 
+    
+    // Cleanup interval on unmount or when dependencies change
+    return () => clearInterval(intervalId);
   }, [symbol, selectedRange]);
 
   // Custom Tooltip
@@ -191,7 +242,7 @@ const CustomLineChartStock = ({symbol}) => {
 
   return (
     <StockMarket symbol={symbol}>
-      <TitleStock data={data}/>
+      {summaryData && <TitleStock data={summaryData}/>}
       
       {/* Time Range Filter Buttons */}
       <div className="card my-4">

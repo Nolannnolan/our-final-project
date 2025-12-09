@@ -26,11 +26,10 @@ const News = () => {
                 <h2 className='text-2xl font-semibold mb-4'>Trang Tin Tức</h2>
             </div>
             
-
-             <div className = "grid grid-cols-1 gap-6">
-                <Summary onChange = {handleChangeSymbol}/>
-                {/* Search bar */}
-             </div>
+            <div className = "grid grid-cols-1 gap-6">
+              <Summary onChange = {handleChangeSymbol}/>
+              {/* Search bar */}
+            </div>
              <div className="grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-4 gap-4 mt-6">
                 <div className="order-1 2xl:order-2 md:col-span-2">
                     <SearchBar />

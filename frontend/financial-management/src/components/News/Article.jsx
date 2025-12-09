@@ -32,7 +32,7 @@ const Article = () => {
         <div className='w-full'>
           <h5 className='text-lg mb-2 font-medium'>Tin tức mới</h5>
 
-          <div className="2xl:max-h-[calc(3*280px)] overflow-y-auto scroll-thin pr-2 md:grid md:grid-cols-2 2xl:grid-cols-1 md:gap-4 2xl:gap-0 ">
+          <div className="2xl:max-h-[calc(5*280px)] overflow-y-auto scroll-thin pr-2 md:grid md:grid-cols-2 2xl:grid-cols-1 md:gap-4 2xl:gap-0 ">
             {news.map((item, index) => (
               <NewsCard 
                 key={index}
