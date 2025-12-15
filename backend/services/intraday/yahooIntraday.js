@@ -123,7 +123,7 @@ async function syncAllStockIntraday(interval = '5m', range = '5d', limit = 100) 
   
   const { rows: stockAssets } = await pool.query(`
     SELECT id, symbol, asset_type, exchange FROM assets 
-    WHERE asset_type IN ('stock', 'forex') 
+    WHERE asset_type IN ('stock', 'forex', 'index') 
       AND (status = 'OK' OR status IS NULL)
     ORDER BY 
       CASE WHEN exchange = 'VNSTOCK' THEN 0 ELSE 1 END,
