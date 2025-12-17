@@ -44,6 +44,7 @@ class ChatRequest(BaseModel):
     session_id: str
     message: str
     model: Optional[str] = None  # Add model parameter
+    token: Optional[str] = None  # JWT token for authenticated tools
 
 
 class ChatResponse(BaseModel):
@@ -110,7 +111,7 @@ async def chat(request: ChatRequest):
                 )
                 session["current_model"] = request.model
         
-        result = agent.answer(request.message)
+        result = agent.answer(request.message, token=request.token)
         
         session["history"].append({
             "user_message": request.message,
@@ -129,7 +130,7 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail=f"Failed to process message: {str(e)}")
 
 
-async def event_generator(session_id: str, message: str, model: Optional[str] = None) -> AsyncGenerator[str, None]:
+async def event_generator(session_id: str, message: str, model: Optional[str] = None, token: Optional[str] = None) -> AsyncGenerator[str, None]:
     """Generate server-sent events for streaming chat response"""
     if session_id not in sessions:
         yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
@@ -185,7 +186,7 @@ async def event_generator(session_id: str, message: str, model: Optional[str] = 
             def callback(event):
                 event_queue.put(event)
             agent.tool_callback = callback
-            result = agent.answer(message)
+            result = agent.answer(message, token=token)
             event_queue.put(None)  # Signal completion
         
         # Start processing in thread
@@ -255,7 +256,7 @@ async def event_generator(session_id: str, message: str, model: Optional[str] = 
 async def chat_stream(request: ChatRequest):
     """Stream chat responses using Server-Sent Events"""
     return StreamingResponse(
-        event_generator(request.session_id, request.message, request.model),
+        event_generator(request.session_id, request.message, request.model, request.token),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

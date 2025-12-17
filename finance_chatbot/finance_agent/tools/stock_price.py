@@ -7,6 +7,8 @@ import certifi
 import ssl
 from typing import Dict, Any
 
+from .backend_api import get_ticker_detail, BackendAPIError, check_backend_health
+
 logger = logging.getLogger(__name__)
 
 os.environ["SSL_CERT_FILE"] = certifi.where()
@@ -79,6 +81,7 @@ def get_stock_price(
 ) -> Dict[str, Any]:
     """
     Get latest market price for a stock.
+    Uses backend API as primary source, falls back to yfinance if backend fails.
     Accepts multiple argument names (ticker, stock_symbol, stock_ticker).
     Returns structured dict.
     """
@@ -93,6 +96,38 @@ def get_stock_price(
         )
 
     norm_symbol = _normalize_symbol(symbol)
+
+    # ============================================================
+    # PRIMARY: Try backend API first
+    # ============================================================
+    try:
+        logger.info(f"Attempting to fetch price from backend API for: {norm_symbol}")
+        ticker_data = get_ticker_detail(norm_symbol)
+        
+        if ticker_data and "price" in ticker_data:
+            price = float(ticker_data.get("price", 0))
+            currency = ticker_data.get("currency", _detect_currency(norm_symbol))
+            
+            logger.info(f"✅ Successfully fetched {norm_symbol} from backend: {price} {currency}")
+            return _build_result(
+                norm_symbol,
+                price,
+                currency,
+                "backend-api",
+                None
+            )
+        else:
+            logger.warning(f"Backend returned data but missing price field for {norm_symbol}")
+            
+    except BackendAPIError as e:
+        logger.warning(f"Backend API failed for {norm_symbol}: {e}. Falling back to yfinance...")
+    except Exception as e:
+        logger.error(f"Unexpected error with backend API for {norm_symbol}: {e}")
+
+    # ============================================================
+    # FALLBACK: Use yfinance if backend fails
+    # ============================================================
+    logger.info(f"Using yfinance fallback for {norm_symbol}")
 
     if USE_YFINANCE:
         # Try as-is and then with .VN fallback if no suffix
@@ -168,10 +203,16 @@ def get_stock_price(
             norm_symbol, 
             None, 
             None, 
-            "yfinance", 
-            f"no data available - tried: {', '.join(candidates)}"
+            "yfinance-fallback", 
+            f"Backend and yfinance both failed - tried: {', '.join(candidates)}"
         )
 
-    # fallback mock
-    logger.info("Returning mock price for %s (yfinance not available or failed).", norm_symbol)
-    return _build_result(norm_symbol, 12.34, "USD", "mock", "mock fallback used")
+    # Final fallback mock (if yfinance not available)
+    logger.warning(f"⚠️ Returning mock price for {norm_symbol} (both backend and yfinance unavailable).")
+    return _build_result(
+        norm_symbol, 
+        12.34, 
+        "USD", 
+        "mock-fallback", 
+        "Backend unavailable, yfinance not installed - using mock data"
+    )

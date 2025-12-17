@@ -14,6 +14,10 @@ def _callable_to_schema(func: Callable) -> Dict[str, Any]:
     for name, param in sig.parameters.items():
         if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):
             continue
+        # Skip 'token' parameter - it will be injected by the agent
+        if name == "token":
+            continue
+            
         ann = param.annotation
         if ann == inspect._empty:
             t = "string"
@@ -131,6 +135,13 @@ from .tools.signal_summary import get_signal_summary
 
 # New tools - Phase 8: Pattern Match Predictor
 from .tools.pattern_match_predictor import get_pattern_match_predictor
+
+# ========== NEW: Backend-integrated tools ==========
+from .tools.fetch_crypto_price import fetch_crypto_price
+from .tools.calculate_moving_average import calculate_moving_average
+from .tools.calculate_rsi import calculate_rsi
+from .tools.detect_support_resistance import detect_support_resistance
+
 
 # ========== Register Existing Tools ==========
 
@@ -325,3 +336,100 @@ registry.register(
     description="Finds historical price patterns across multiple assets (stocks, crypto, forex, etc.) and calculates the probabilistic outcome (up/down and average return) for the next 5 days based on pattern similarity. Uses FAISS vector search to find similar 30-day patterns from millions of historical patterns. Returns win rate, average return, and BULLISH/BEARISH/NEUTRAL prediction with confidence level. Use this for pattern-based price prediction and technical analysis.",
     func=get_pattern_match_predictor,
 )
+
+# ========== NEW: PFM Tools (Personal Financial Management) ==========
+from .tools.pfm_tools import (
+    pfm_get_financial_summary,
+    pfm_get_report_by_time,
+    pfm_add_expense,
+    pfm_search_expenses,
+    pfm_add_income,
+    pfm_search_incomes,
+    pfm_get_watchlist,
+    pfm_add_to_watchlist,
+    pfm_remove_from_watchlist
+)
+
+# ========== Register Backend-Integrated Tools ==========
+
+
+registry.register(
+    name="fetch_crypto_price",
+    description="Fetch real-time cryptocurrency prices from backend Binance stream (primary) with CoinGecko fallback. Supports BTC, ETH, BNB, ADA, XRP, SOL, and more. Returns price, 24h change, volume. Much faster than external APIs.",
+    func=fetch_crypto_price,
+)
+
+registry.register(
+    name="calculate_moving_average",
+    description="Calculate Moving Average (SMA or EMA) using backend OHLCV data with yfinance fallback. Returns MA value, current price, signal (BULLISH/BEARISH), and distance percentage. Supports multiple timeframes (1m to 1w). Use for trend analysis.",
+    func=calculate_moving_average,
+)
+
+registry.register(
+    name="calculate_rsi",
+    description="Calculate RSI (Relative Strength Index) using backend OHLCV data with yfinance fallback. Returns RSI value (0-100), signal (OVERBOUGHT/OVERSOLD/NEUTRAL), and interpretation. RSI>70=overbought, RSI<30=oversold. Use for momentum analysis.",
+    func=calculate_rsi,
+)
+
+registry.register(
+    name="detect_support_resistance",
+    description="Detect support and resistance price levels using backend OHLCV data with yfinance fallback. Returns top support/resistance levels, nearest levels, and distance to current price. Use for identifying key price zones and potential reversal points.",
+    func=detect_support_resistance,
+)
+
+# ========== Register PFM Tools ==========
+
+registry.register(
+    name="pfm_get_financial_summary",
+    description="Get financial summary for the current user including total income, total expense, and current balance. Use this to answer questions like 'How much money do I have left?', 'What is my financial status?'. Requires user authentication.",
+    func=pfm_get_financial_summary,
+)
+
+registry.register(
+    name="pfm_get_report_by_time",
+    description="Get financial report for a specific time range. Returns income and expense details. Use this for questions like 'How much did I spend last month?', 'Show me my finances from Jan to March'. Requires start_date and end_date (YYYY-MM-DD).",
+    func=pfm_get_report_by_time,
+)
+
+registry.register(
+    name="pfm_add_expense",
+    description="Add a new expense transaction. Use this when user says 'I spent 50k on food', 'Add 500k for rent'. Requires title, amount, category. Optional: description, date.",
+    func=pfm_add_expense,
+)
+
+registry.register(
+    name="pfm_search_expenses",
+    description="Search expense history by date range or category. Use this to find past expenses like 'How much did I spend on food last week?'.",
+    func=pfm_search_expenses,
+)
+
+registry.register(
+    name="pfm_add_income",
+    description="Add a new income transaction. Use this when user says 'I received salary 20m', 'Got bonus 5m'. Requires title, amount, category. Optional: description, date.",
+    func=pfm_add_income,
+)
+
+registry.register(
+    name="pfm_search_incomes",
+    description="Search income history by date range or category. Use this to find past incomes.",
+    func=pfm_search_incomes,
+)
+
+registry.register(
+    name="pfm_get_watchlist",
+    description="Get user's personal watchlist of stocks/crypto. Use this to show tracked assets.",
+    func=pfm_get_watchlist,
+)
+
+registry.register(
+    name="pfm_add_to_watchlist",
+    description="Add a stock or crypto symbol to user's watchlist. Use this when user says 'Track VCB for me', 'Add BTC to watchlist'.",
+    func=pfm_add_to_watchlist,
+)
+
+registry.register(
+    name="pfm_remove_from_watchlist",
+    description="Remove a symbol from user's watchlist. Use this when user says 'Stop tracking VCB', 'Remove BTC from watchlist'.",
+    func=pfm_remove_from_watchlist,
+)
+

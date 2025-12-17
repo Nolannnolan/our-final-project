@@ -50,6 +50,9 @@ exports.sendMessage = async (req, res) => {
         // Get recent messages for context (short-term memory)
         const recentMessages = await Message.getRecentMessages(conversationId, 20);
 
+        // Get token from header
+        const token = req.headers.authorization?.split(" ")[1];
+
         // Send to AI agent
         const startTime = Date.now();
         let aiResponse;
@@ -58,7 +61,8 @@ exports.sendMessage = async (req, res) => {
             aiResponse = await aiAgentService.sendMessage(
                 conversation.agent_session_id,
                 content.trim(),
-                model
+                model,
+                token
             );
         } catch (error) {
             // Save error message
@@ -191,12 +195,16 @@ exports.streamMessage = async (req, res) => {
         let answeredSubquestions = [];
         const startTime = Date.now();
 
+        // Get token from header
+        const token = req.headers.authorization?.split(" ")[1];
+
         try {
             // Get streaming response from AI agent
             const streamResponse = await aiAgentService.streamMessage(
                 conversation.agent_session_id,
                 content.trim(),
-                model
+                model,
+                token
             );
 
             // Pipe the stream

@@ -396,10 +396,63 @@ class FinancialAgent:
             if risk and risk.func not in tools:
                 tools.insert(0, risk.func)
 
+        # ========== PFM Tools Heuristics ==========
+        
+        # PFM: Expense
+        if any(word in q for word in ["chi tiêu", "expense", "spending", "cost", "mua", "trả tiền", "tốn", "spend", "chi"]):
+            # Check if it's adding or searching
+            if any(w in q for w in ["thêm", "add", "new", "tạo", "ghi", "vừa"]):
+                tool = self.registry.get("pfm_add_expense")
+                if tool and tool.func not in tools:
+                    tools.insert(0, tool.func)
+            # Also add search if not explicitly adding, or as fallback
+            tool = self.registry.get("pfm_search_expenses")
+            if tool and tool.func not in tools:
+                tools.append(tool.func)
+                
+        # PFM: Income
+        if any(word in q for word in ["thu nhập", "income", "lương", "salary", "bonus", "thưởng", "kiếm được", "nhận được"]):
+            if any(w in q for w in ["thêm", "add", "new", "tạo", "ghi", "vừa"]):
+                tool = self.registry.get("pfm_add_income")
+                if tool and tool.func not in tools:
+                    tools.insert(0, tool.func)
+            tool = self.registry.get("pfm_search_incomes")
+            if tool and tool.func not in tools:
+                tools.append(tool.func)
+
+        # PFM: Dashboard/Summary
+        if any(word in q for word in ["tài chính", "financial", "balance", "số dư", "tổng kết", "summary", "báo cáo", "report", "tiền"]):
+            tool = self.registry.get("pfm_get_financial_summary")
+            if tool and tool.func not in tools:
+                tools.insert(0, tool.func)
+            tool = self.registry.get("pfm_get_report_by_time")
+            if tool and tool.func not in tools:
+                tools.append(tool.func)
+
+        # PFM: Watchlist
+        if any(word in q for word in ["watchlist", "theo dõi", "track", "quan tâm", "danh sách"]):
+            if any(w in q for w in ["thêm", "add", "new"]):
+                tool = self.registry.get("pfm_add_to_watchlist")
+                if tool and tool.func not in tools:
+                    tools.insert(0, tool.func)
+            elif any(w in q for w in ["xóa", "remove", "delete", "bỏ"]):
+                tool = self.registry.get("pfm_remove_from_watchlist")
+                if tool and tool.func not in tools:
+                    tools.insert(0, tool.func)
+            
+            tool = self.registry.get("pfm_get_watchlist")
+            if tool and tool.func not in tools:
+                tools.append(tool.func)
+
         return tools
 
 
-    def _call_callable(self, func: Callable, args: Dict[str, Any]):
+    def _call_callable(self, func: Callable, args: Dict[str, Any], token: Optional[str] = None):
+        # Inject token if the function expects it
+        sig = inspect.signature(func)
+        if "token" in sig.parameters and token:
+            args["token"] = token
+            
         # call function with mapped args
         return func(**(args or {}))
 
@@ -430,7 +483,7 @@ class FinancialAgent:
         ]
         return msgs
 
-    def answer(self, user_query: str) -> dict:
+    def answer(self, user_query: str, token: Optional[str] = None) -> dict:
         subs = self.generate_subquestions_from_query(user_query)
         subs_raw = [s.dict() for s in subs]
         ordered = topo_sort_subquestions(subs_raw)
@@ -520,7 +573,7 @@ class FinancialAgent:
                 
                 try:
                     # execute
-                    result = self._call_callable(chosen_func, mapped_args)
+                    result = self._call_callable(chosen_func, mapped_args, token=token)
                     extracted = result if isinstance(result, dict) else {"result": result}
                     
                     # Trigger tool completion callback

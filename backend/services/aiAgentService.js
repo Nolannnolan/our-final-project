@@ -29,12 +29,13 @@ class AIAgentService {
     /**
      * Send message to AI agent (non-streaming)
      */
-    async sendMessage(sessionId, message, model = 'gemini-2.5-flash') {
+    async sendMessage(sessionId, message, model = 'gemini-2.5-flash', token = null) {
         try {
             const response = await axios.post(`${AI_AGENT_BASE_URL}/api/chat`, {
                 session_id: sessionId,
                 message: message,
-                model: model
+                model: model,
+                token: token
             });
 
             // Update last activity
@@ -53,14 +54,15 @@ class AIAgentService {
      * Stream message to AI agent
      * Returns axios response for streaming
      */
-    async streamMessage(sessionId, message, model = 'gemini-2.5-flash') {
+    async streamMessage(sessionId, message, model = 'gemini-2.5-flash', token = null) {
         try {
             const response = await axios.post(
                 `${AI_AGENT_BASE_URL}/api/chat/stream`,
                 {
                     session_id: sessionId,
                     message: message,
-                    model: model
+                    model: model,
+                    token: token
                 },
                 {
                     responseType: 'stream'
