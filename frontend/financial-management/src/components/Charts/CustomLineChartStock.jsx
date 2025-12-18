@@ -52,11 +52,11 @@ const CustomLineChartStock = ({symbol, onAddToWatchlist}) => {
         start = new Date(end.getFullYear(), 0, 1);
         break;
       case '1Y':
-        timeframe = '2d';
+        timeframe = '1d';
         start.setFullYear(end.getFullYear() - 1);
         break;
       case '5Y':
-        timeframe = '7d';
+        timeframe = '1d';
         start.setFullYear(end.getFullYear() - 5);
         break;
       default:
@@ -243,6 +243,10 @@ const CustomLineChartStock = ({symbol, onAddToWatchlist}) => {
     ];
   };
 
+  const chartColor = chartData.length > 0 
+    ? (chartData[chartData.length - 1].price >= chartData[0].price ? '#22c55e' : '#ef4444')
+    : '#875cf5';
+
   return (
     <StockMarket symbol={symbol}>
       {summaryData && <TitleStock data={summaryData} onAddToWatchlist={onAddToWatchlist}/>}
@@ -280,8 +284,8 @@ const CustomLineChartStock = ({symbol, onAddToWatchlist}) => {
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor='#875cf5' stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor='#875cf5' stopOpacity={0}/>
+                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor={chartColor} stopOpacity={0}/>
                   </linearGradient>
                 </defs>
 
@@ -305,7 +309,7 @@ const CustomLineChartStock = ({symbol, onAddToWatchlist}) => {
                 <Area
                   // type="monotone"
                   dataKey="price"
-                  stroke="#875cf5"
+                  stroke={chartColor}
                   fill="url(#priceGradient)"
                   strokeWidth={3}
                   // dot={{ r: 1, fill: "#ab8df8" }}
