@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 const News = () => {
     useUserAuth();
     const [isChatOpen, setIsChatOpen] = useState(false);
-    const [symbol, setSymbol] = useState("^VNINDEX.VN");
+    const [symbol, setSymbol] = useState("BTCUSDT");
     const [watchlistKey, setWatchlistKey] = useState(0);
 
     const handleChangeSymbol = (newSymbol) => {
