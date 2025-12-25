@@ -2,18 +2,7 @@
 
 A comprehensive full-stack financial management platform with AI-powered chatbot assistance, real-time market data tracking, and personal expense/income management.
 
-## 📋 Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Architecture](#architecture)
-- [API Documentation](#api-documentation)
-- [Contributing](#contributing)
-
-## 🎯 Overview
+##  Overview
 
 This project is a complete financial management solution that combines:
 - **Personal Finance Tracking**: Track income, expenses, and generate financial reports
@@ -22,36 +11,36 @@ This project is a complete financial management solution that combines:
 - **Watchlist Management**: Monitor favorite stocks and cryptocurrencies
 - **News Aggregation**: Financial news and market updates
 
-## ✨ Features
+##  Features
 
 ### Personal Finance Management
-- ✅ Track income and expenses by category
-- 📊 Visual dashboard with charts and analytics
-- 📅 Time-based filtering (day, week, month, year)
-- 📥 Export data to Excel
-- 💾 MongoDB database for user data persistence
+-  Track income and expenses by category
+-  Visual dashboard with charts and analytics
+-  Time-based filtering (day, week, month, year)
+-  Export data to Excel
+-  MongoDB database for user data persistence
 
 ### Market Data & Trading
-- 📈 Real-time price updates via WebSocket (Binance)
-- 🔄 Historical OHLCV (Open, High, Low, Close, Volume) data
-- 📊 Market statistics and performance metrics
-- 🔍 Asset search and discovery
-- ⭐ Watchlist with starred favorites
-- 🚨 Price alert system
+-  Real-time price updates via WebSocket (Binance)
+-  Historical OHLCV (Open, High, Low, Close, Volume) data
+-  Market statistics and performance metrics
+-  Asset search and discovery
+-  Watchlist with starred favorites
+-  Price alert system
 
 ### AI-Powered Finance Chatbot
-- 🤖 Natural language queries for stocks and companies
-- 📰 Automatic news search and fundamental analysis
-- 💹 Financial ratio calculations (EPS, P/E, ROE)
-- 🔧 Multiple tools:  `get_stock_price`, `get_fundamentals`, `search_news`, etc.
-- 🧠 Vector search with FAISS for intelligent tool selection
-- 💬 Conversation history and session management
+-  Natural language queries for stocks and companies
+-  Automatic news search and fundamental analysis
+-  Financial ratio calculations (EPS, P/E, ROE)
+-  Multiple tools:  `get_stock_price`, `get_fundamentals`, `search_news`, etc.
+-  Vector search with FAISS for intelligent tool selection
+-  Conversation history and session management
 
 ### User Features
-- 🔐 JWT-based authentication
-- 👤 User profiles with avatar upload
-- 🔑 Password reset functionality
-- 📧 Email notifications via Nodemailer
+-  JWT-based authentication
+-  User profiles with avatar upload
+-  Password reset functionality
+-  Email notifications via Nodemailer
 
 ## 🛠 Technology Stack
 
@@ -92,7 +81,7 @@ This project is a complete financial management solution that combines:
   - SerpAPI for web search (optional)
 - **Embeddings**: HuggingFace `all-MiniLM-L6-v2`
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 our-final-project/
@@ -132,7 +121,7 @@ our-final-project/
     └── TOOL_DESCRIPTION.md
 ```
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Node.js 16+ and npm
@@ -242,36 +231,7 @@ The frontend will run on `http://localhost:5173`
 
 The chatbot API will run on `http://localhost:8008`
 
-## 🏗 Architecture
-
-### System Flow
-
-```
-┌─────────────┐         ┌──────────────┐         ┌──────────────┐
-│   React     │────────▶│   Express    │────────▶│   MongoDB    │
-│  Frontend   │         │   Backend    │         │              │
-└─────────────┘         └──────────────┘         └──────────────┘
-       │                       │                          
-       │                       │                  ┌──────────────┐
-       │                       └─────────────────▶│  PostgreSQL  │
-       │                       │                  │  (OHLCV Data)│
-       │                       │                  └──────────────┘
-       │                       │                          
-       │                       │                  ┌──────────────┐
-       │                       ├─────────────────▶│    Redis     │
-       │                       │                  │   (Cache)    │
-       │                       │                  └──────────────┘
-       │                       │                          
-       │                       │  WebSocket       ┌──────────────┐
-       │                       ├─────────────────▶│   Binance    │
-       │                       │                  │     API      │
-       │                       │                  └──────────────┘
-       │                                                  
-       │                ┌──────────────┐         ┌──────────────┐
-       └───────────────▶│   FastAPI    │────────▶│   Gemini AI  │
-                        │   Chatbot    │         │              │
-                        └──────────────┘         └──────────────┘
-```
+##  Architecture
 
 ### Key Components
 
@@ -280,7 +240,7 @@ The chatbot API will run on `http://localhost:8008`
 3. **Data Synchronization**:  Cron jobs for periodic data updates
 4. **AI Agent**: RAG-based system with tool calling for financial queries
 
-## 📚 API Documentation
+##  API Documentation
 
 ### Authentication Endpoints
 - `POST /api/v1/auth/register` - Register new user
@@ -311,19 +271,19 @@ The chatbot API will run on `http://localhost:8008`
 - `GET /api/session/: id` - Get session info
 - `GET /api/session/: id/history` - Get conversation history
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
+##  License
 
 This project is open source and available for educational purposes.
 
-## 👥 Authors
+##  Authors
 
 Created by the team at **Nolannnolan**
 
-## 🔗 Links
+##  Links
 
 - Repository: [https://github.com/Nolannnolan/our-final-project](https://github.com/Nolannnolan/our-final-project)
 - Issues: [https://github.com/Nolannnolan/our-final-project/issues](https://github.com/Nolannnolan/our-final-project/issues)
