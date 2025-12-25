@@ -104,3 +104,22 @@ exports.downloadExpenseExcel = async (req, res) => {
         res.status(500).json({message: "Server Error"});
     }
 }
+
+// get unique expense categories
+exports.getUniqueCategories = async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        const categories = await Expense.distinct('category', { 
+            userId,
+            category: { $ne: null, $ne: '' } 
+        });
+        
+        // Sort alphabetically and return
+        const sortedCategories = categories.filter(c => c).sort();
+        res.status(200).json(sortedCategories);
+    } catch (error) {
+        console.error("Get unique categories error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};

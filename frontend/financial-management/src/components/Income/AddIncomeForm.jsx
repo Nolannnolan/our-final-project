@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import Input from '../Inputs/Input'
+import ComboboxInput from '../Inputs/ComboboxInput'
 import EmojiPickerPopup from '../EmojiPickerPopup'
 
-const AddIncomeForm = ({onAddIncome}) => {
+const AddIncomeForm = ({onAddIncome, incomeSources = []}) => {
     const today = new Date().toISOString().split('T')[0]; // Lấy ngày hôm nay theo định dạng YYYY-MM-DD
     
     const [income, setIncome] = useState({
@@ -20,20 +21,20 @@ const AddIncomeForm = ({onAddIncome}) => {
         onSelect={(selectedIcon) => handleChange("icon", selectedIcon)}
       />
 
-      <Input
+      <ComboboxInput
         value={income.source}
         onChange={({target}) => handleChange("source", target.value)}
         label="Income Source"
-        placeholder="Freelance, Salary, ect"
-        type="text"
+        placeholder="Lương, kinh doanh,..."
+        suggestions={incomeSources}
       />
 
       <Input 
         value={income.amount}
         onChange={({target}) => handleChange("amount", target.value)}
         label="Amount"
-        placeholder=""
-        type="number"
+        placeholder="Nhập số tiền"
+        type="text"
       />
 
       <Input

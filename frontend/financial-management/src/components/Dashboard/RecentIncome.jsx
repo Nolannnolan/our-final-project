@@ -6,7 +6,7 @@ const RecentIncome = ({transactions, onSeeMore}) => {
   return (
     <div className = "card">
       <div className = "flex items-center justify-between">
-        <h5 className = "text-lg">Thu nhập trong 30 ngày</h5>
+        <h5 className = "text-lg">Thu nhập trong 30 ngày qua</h5>
         <button className = "card-btn" onClick = {onSeeMore}>Xem tất cả <i className="fa-solid fa-arrow-right "></i></button>
       </div>
       

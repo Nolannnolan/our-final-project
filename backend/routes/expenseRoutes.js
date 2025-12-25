@@ -5,6 +5,7 @@ const {
     deleteExpense,
     downloadExpenseExcel,
     updateExpense,
+    getUniqueCategories,
 } = require("../controllers/expenseController");
 const { getExpenseByTime } = require("../controllers/expenseSearch");
 
@@ -14,6 +15,7 @@ const router = express.Router();
 
 router.post("/add", protect, addExpense);
 router.get("/get", protect, getAllExpense);
+router.get("/categories", protect, getUniqueCategories);
 router.get("/search", protect, getExpenseByTime);
 router.get("/downloadexcel", protect, downloadExpenseExcel);
 router.put("/:id", protect, updateExpense);

@@ -16,6 +16,7 @@ const Income = () => {
 
   useUserAuth();
   const [incomeData, setIncomeData] = useState([])
+  const [incomeSources, setIncomeSources] = useState([])
   const [openAddIncomeModal, setOpenAddIncomeModal] = useState(false)
   const [openEditIncomeModal, setOpenEditIncomeModal] = useState(false)
   const [editingIncome, setEditingIncome] = useState(null)
@@ -45,6 +46,18 @@ const Income = () => {
       setLoading(false);
     }
 
+  }
+
+  // Fetch unique income sources
+  const fetchIncomeSources = async () => {
+    try {
+      const response = await axiosInstance.get(API_PATHS.INCOME.GET_UNIQUE_SOURCES);
+      if (response.data) {
+        setIncomeSources(response.data);
+      }
+    } catch (error) {
+      console.log("Failed to fetch income sources:", error);
+    }
   }
 
   const handleReset = async () => {
@@ -134,6 +147,7 @@ const Income = () => {
       setOpenAddIncomeModal(false);
       toast.success("Thêm thu nhập thành công")
       fetchIncomeData();
+      fetchIncomeSources(); // Refresh sources list
 
     }catch(error){
       console.error(
@@ -229,6 +243,7 @@ const Income = () => {
 
   useEffect(()=>{
     fetchIncomeData()
+    fetchIncomeSources()
     return()=>{}
   }, [])
 
@@ -264,7 +279,10 @@ const Income = () => {
           onClose = {() => setOpenAddIncomeModal(false)}
           title="Thêm thu nhập"
         >
-          <AddIncomeForm onAddIncome={handleAddIncome}/>
+          <AddIncomeForm 
+            onAddIncome={handleAddIncome}
+            incomeSources={incomeSources}
+          />
         </Modal>
 
         <Modal

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import ConfirmLogout from './ConfirmLogout'
 
 
-const SideMenu = ({activeMenu}) => {
+const   SideMenu = ({activeMenu}) => {
     const {user, clearUser} = useContext(UserContext);
     const navigate = useNavigate();
     const [showLogoutModal, setShowLogoutModal] = useState(false);

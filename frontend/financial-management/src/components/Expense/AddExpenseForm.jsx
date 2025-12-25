@@ -1,16 +1,18 @@
 import React, { useState } from 'react'
 import Input from '../Inputs/Input'
+import ComboboxInput from '../Inputs/ComboboxInput'
 import EmojiPickerPopup from '../EmojiPickerPopup'
 
-const AddExpenseForm = ({onAddExpense}) => {
+const AddExpenseForm = ({onAddExpense, expenseCategories = []}) => {
     const [expense, setExpense] = useState({
         category: "",
         amount: "",
-        date: "",
+        date: new Date().toISOString().split("T")[0],
         icon: "",
     })
 
     const handleChange = (key, value) => setExpense({...expense, [key]: value})
+
   return (
     <div>
       <EmojiPickerPopup
@@ -18,20 +20,20 @@ const AddExpenseForm = ({onAddExpense}) => {
         onSelect={(selectedIcon) => handleChange("icon", selectedIcon)}
       />
 
-      <Input
+      <ComboboxInput
         value={expense.category}
         onChange={({target}) => handleChange("category", target.value)}
         label="Expense Category"
-        placeholder="Eat, Clothes, ect"
-        type="text"
+        placeholder="Ăn, quần áo,..."
+        suggestions={expenseCategories}
       />
 
       <Input 
         value={expense.amount}
         onChange={({target}) => handleChange("amount", target.value)}
         label="Amount"
-        placeholder=""
-        type="number"
+        placeholder="Nhập số tiền"
+        type="text"
       />
 
       <Input

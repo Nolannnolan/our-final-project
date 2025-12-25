@@ -16,6 +16,7 @@ const Expense = () => {
   useUserAuth();
 
   const [expenseData, setExpenseData] = useState([])
+  const [expenseCategories, setExpenseCategories] = useState([])
   const [openAddExpenseModal, setOpenAddExpenseModal] = useState(false)
   const [openEditExpenseModal, setOpenEditExpenseModal] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
@@ -46,6 +47,18 @@ const Expense = () => {
       setLoading(false);
     }
 
+  }
+
+  // Fetch unique expense categories
+  const fetchExpenseCategories = async () => {
+    try {
+      const response = await axiosInstance.get(API_PATHS.EXPENSE.GET_UNIQUE_CATEGORIES);
+      if (response.data) {
+        setExpenseCategories(response.data);
+      }
+    } catch (error) {
+      console.log("Failed to fetch expense categories:", error);
+    }
   }
 
   const handleReset = async () => {
@@ -135,6 +148,7 @@ const Expense = () => {
       setOpenAddExpenseModal(false);
       toast.success("Thêm chi tiêu thành công")
       fetchExpenseData();
+      fetchExpenseCategories(); // Refresh categories list
 
     }catch(error){
       console.error(
@@ -230,6 +244,7 @@ const Expense = () => {
 
   useEffect(()=>{
     fetchExpenseData()
+    fetchExpenseCategories()
     return()=>{}
   }, [])
   return (
@@ -264,7 +279,10 @@ const Expense = () => {
           onClose = {() => setOpenAddExpenseModal(false)}
           title="Thêm chi tiêu"
         >
-          <AddExpenseForm onAddExpense={handleAddExpense}/>
+          <AddExpenseForm 
+            onAddExpense={handleAddExpense}
+            expenseCategories={expenseCategories}
+          />
         </Modal>
 
         <Modal

@@ -110,3 +110,22 @@ exports.downloadIncomeExcel = async (req, res) => {
         res.status(500).json({message: "Server Error"})
     }
 }
+
+// get unique income sources
+exports.getUniqueSources = async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        const sources = await Income.distinct('source', { 
+            userId,
+            source: { $ne: null, $ne: '' } 
+        });
+        
+        // Sort alphabetically and return
+        const sortedSources = sources.filter(s => s).sort();
+        res.status(200).json(sortedSources);
+    } catch (error) {
+        console.error("Get unique sources error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
