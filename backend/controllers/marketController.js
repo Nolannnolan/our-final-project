@@ -5,6 +5,7 @@
 
 const pool = require('../config/pg');
 const redis = require('../config/redis');
+const { convertPrice, getExchangeRate } = require('../services/currencyConverter');
 
 /**
  * Calculate 24h stats for a symbol  
@@ -215,19 +216,28 @@ exports.getTicker = async (req, res) => {
       return res.status(404).json({ error: 'no price data' });
     }
     
+    // Convert prices to VND
+    const exchangeRate = await getExchangeRate();
+    const priceConverted = await convertPrice(stats.current_price, asset.exchange, exchangeRate);
+    const openConverted = await convertPrice(stats.open || stats.current_price, asset.exchange, exchangeRate);
+    const high24hConverted = await convertPrice(stats.high_24h || 0, asset.exchange, exchangeRate);
+    const low24hConverted = await convertPrice(stats.low_24h || 0, asset.exchange, exchangeRate);
+    const prevCloseConverted = await convertPrice(stats.price_24h_ago || stats.current_price, asset.exchange, exchangeRate);
+    
     const ticker = {
       symbol: asset.symbol,
       name: asset.name,
       exchange: asset.exchange,
       asset_type: asset.asset_type,
-      price: parseFloat(stats.current_price),
-      open: parseFloat(stats.open || stats.current_price),
-      change24h: parseFloat(stats.change_24h || 0),
+      price: priceConverted.price,
+      open: openConverted.price,
+      change24h: priceConverted.price - prevCloseConverted.price,
       changePercent24h: parseFloat(stats.change_percent_24h || 0),
-      high24h: parseFloat(stats.high_24h || 0),
-      low24h: parseFloat(stats.low_24h || 0),
+      high24h: high24hConverted.price,
+      low24h: low24hConverted.price,
       volume24h: parseFloat(stats.volume_24h || 0),
-      prevClose: parseFloat(stats.price_24h_ago || stats.current_price),
+      prevClose: prevCloseConverted.price,
+      currency: 'VND',
       timestamp: stats.ts
     };
     
@@ -264,6 +274,9 @@ exports.getTickersBulk = async (req, res) => {
   try {
     const tickers = [];
     
+    // Get exchange rate once for all conversions
+    const exchangeRate = await getExchangeRate();
+    
     for (const symbol of symbols) {
       try {
         // Try cache first
@@ -288,17 +301,24 @@ exports.getTickersBulk = async (req, res) => {
         
         if (!stats) continue;
         
+        // Convert prices to VND
+        const priceConverted = await convertPrice(stats.current_price, asset.exchange, exchangeRate);
+        const high24hConverted = await convertPrice(stats.high_24h || 0, asset.exchange, exchangeRate);
+        const low24hConverted = await convertPrice(stats.low_24h || 0, asset.exchange, exchangeRate);
+        const prevCloseConverted = await convertPrice(stats.price_24h_ago || stats.current_price, asset.exchange, exchangeRate);
+        
         const ticker = {
           symbol: asset.symbol,
           name: asset.name,
           exchange: asset.exchange,
           asset_type: asset.asset_type,
-          price: parseFloat(stats.current_price),
-          change24h: parseFloat(stats.change_24h || 0),
+          price: priceConverted.price,
+          change24h: priceConverted.price - prevCloseConverted.price,
           changePercent24h: parseFloat(stats.change_percent_24h || 0),
-          high24h: parseFloat(stats.high_24h || 0),
-          low24h: parseFloat(stats.low_24h || 0),
+          high24h: high24hConverted.price,
+          low24h: low24hConverted.price,
           volume24h: parseFloat(stats.volume_24h || 0),
+          currency: 'VND',
           timestamp: stats.ts
         };
         
@@ -802,20 +822,31 @@ exports.getTickerDetail = async (req, res) => {
         : 0
     };
     
+    // Convert prices to VND
+    const exchangeRate = await getExchangeRate();
+    const openConverted = await convertPrice(latest.open, asset.exchange, exchangeRate);
+    const highConverted = await convertPrice(latest.high, asset.exchange, exchangeRate);
+    const lowConverted = await convertPrice(latest.low, asset.exchange, exchangeRate);
+    const closeConverted = await convertPrice(currentPrice, asset.exchange, exchangeRate);
+    const prevCloseConverted = await convertPrice(prevClose, asset.exchange, exchangeRate);
+    const fiftyTwoWeekHighConverted = await convertPrice(yearData.week_52_high || currentPrice, asset.exchange, exchangeRate);
+    const fiftyTwoWeekLowConverted = await convertPrice(yearData.week_52_low || currentPrice, asset.exchange, exchangeRate);
+    
     const tickerDetail = {
       symbol: asset.symbol,
       name: asset.name,
       exchange: asset.exchange,
       asset_type: asset.asset_type,
-      open: parseFloat(latest.open),
-      high: parseFloat(latest.high),
-      low: parseFloat(latest.low),
-      close: currentPrice,
-      prevClose: parseFloat(prevClose),
+      open: openConverted.price,
+      high: highConverted.price,
+      low: lowConverted.price,
+      close: closeConverted.price,
+      prevClose: prevCloseConverted.price,
       volume: parseFloat(latest.volume),
-      fiftyTwoWeekHigh: parseFloat(yearData.week_52_high || currentPrice),
-      fiftyTwoWeekLow: parseFloat(yearData.week_52_low || currentPrice),
+      fiftyTwoWeekHigh: fiftyTwoWeekHighConverted.price,
+      fiftyTwoWeekLow: fiftyTwoWeekLowConverted.price,
       profit,
+      currency: 'VND',
       timestamp: latest.ts
     };
     
@@ -929,7 +960,6 @@ exports.getTickerSummary = async (req, res) => {
     // Calculate stats
     const stats = await calculate24hStats(symbol);
     
-    const currency = exchange === 'HOSE' ? 'VND' : 'USD';
     const priceFormatter = new Intl.NumberFormat('vi-VN', { 
       minimumFractionDigits: 2, 
       maximumFractionDigits: 2 
@@ -944,19 +974,24 @@ exports.getTickerSummary = async (req, res) => {
         percentChangeNow: 0,
         isMarketOpen: isMarketOpen(exchange),
         lastUpdate: formatLastUpdate(new Date()),
-        currency: currency
+        currency: 'VND'
       });
     }
+    
+    // Convert prices to VND
+    const exchangeRate = await getExchangeRate();
+    const priceConverted = await convertPrice(stats.current_price, asset.exchange, exchangeRate);
+    const changeConverted = await convertPrice(stats.change_24h, asset.exchange, exchangeRate);
     
     const response = {
       name: asset.name,
       symbol: asset.symbol,
-      priceNow: priceFormatter.format(stats.current_price),
-      changeNow: parseFloat(stats.change_24h.toFixed(2)),
+      priceNow: priceFormatter.format(priceConverted.price),
+      changeNow: parseFloat(changeConverted.price.toFixed(2)),
       percentChangeNow: parseFloat(stats.change_percent_24h.toFixed(2)),
       isMarketOpen: isMarketOpen(exchange),
       lastUpdate: formatLastUpdate(stats.ts),
-      currency: currency
+      currency: 'VND'
     };
     
     res.json(response);
