@@ -24,7 +24,7 @@ const AuthLayout = ({children}) => {
                     ></path>
                 </svg>
                 <h2 className='text-lg font-medium text-black'>
-                    FPM
+                    PFM
                 </h2>
             </div>
             

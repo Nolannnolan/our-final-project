@@ -63,9 +63,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const PORT = process.env.PORT || 8000;
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`🚀 Server started on port ${PORT}`);
+    console.log(`🚀 Server started on port ${PORT} (accessible from network)`);
     console.log(`${'='.repeat(60)}\n`);
 
     // Start Frontend WebSocket server (with room subscriptions)
