@@ -1,4 +1,4 @@
-# Financial Personal Management
+# Personal Financial Management
 
 A comprehensive full-stack financial management platform with AI-powered chatbot assistance, real-time market data tracking, and personal expense/income management.
 
