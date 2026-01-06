@@ -376,6 +376,8 @@ function startDailySyncJobs() {
   
   // Additional sync at market close (5 PM)
   scheduleDailySync(17, 30);
+
+  scheduleDailySync(11, 5);
   
   log('\n✅ Daily OHLCV sync jobs scheduled\n');
 }
