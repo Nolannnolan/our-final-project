@@ -66,7 +66,6 @@ This project is a complete financial management solution that combines:
 - **UI Libraries**:
   - Recharts for data visualization
   - Lucide React & React Icons for icons
-  - React Hot Toast for notifications
   - React Markdown for rendering markdown
 - **State Management**: React hooks
 - **HTTP Client**: Axios
